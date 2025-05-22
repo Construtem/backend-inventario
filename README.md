@@ -3,10 +3,10 @@
 Este microservicio gestiona el inventario y despacho en Construtem.
 
 ## 🛠️ Tecnologías
-- Go
-- PostgreSQL
-- REST API
-- Docker
+- Go (Lenguaje)
+- Gin (Framework)
+- GORM (Libreria de Go para interactuar con bases de datos)
+- Postgres
 
 ## 🚀 Funcionalidades
 - Control de stock por bodega y sucursal.
