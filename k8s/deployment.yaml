@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-inventario
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend-inventario
+  template:
+    metadata:
+      labels:
+        app: backend-inventario
+    spec:
+      containers:
+        - name: backend-inventario
+          image: gcr.io/construtem/backend-inventario:latest
+          ports:
+            - containerPort: 8080
