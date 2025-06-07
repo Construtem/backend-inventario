@@ -2,107 +2,187 @@ CREATE SCHEMA IF NOT EXISTS inventario;
 
 SET search_path TO inventario;
 
-CREATE TABLE IF NOT EXISTS sucursal (
-    id_sucursal SERIAL,
-    nombre VARCHAR(50) NOT NULL,
-    direccion VARCHAR(255) NOT NULL,
-    telefono VARCHAR(20) NOT NULL,
-    PRIMARY KEY (id_sucursal)
+CREATE TABLE roles (
+    id SERIAL,
+    nombre VARCHAR(50) NOT NULL UNIQUE,
+    PRIMARY KEY (id)
 );
 
-CREATE TABLE IF NOT EXISTS producto (
-    id_producto SERIAL,
-    sku VARCHAR(10) NOT NULL UNIQUE,
-    nombre VARCHAR(50) NOT NULL,
-    descripcion VARCHAR(255),
-    peso_kg DECIMAL(5,2) NOT NULL,
-    dimensiones VARCHAR(50) NOT NULL,
-    costo_base DECIMAL(10,2) NOT NULL,
-    precio_venta DECIMAL(10,2) NOT NULL,
-    activo BOOLEAN,
-    PRIMARY KEY (id_producto)
+CREATE TABLE usuarios (
+    id SERIAL,
+    nombre TEXT NOT NULL,
+    correo TEXT NOT NULL UNIQUE,
+    contrasena TEXT NOT NULL,
+    rol_id ,
+    PRIMARY KEY (id)
 );
 
-CREATE TABLE IF NOT EXISTS bodega (
-    id_bodega SERIAL,
-    nombre VARCHAR(50) NOT NULL,
-    direccion VARCHAR(255) NOT NULL,
-    telefono VARCHAR(20) NOT NULL,
-    PRIMARY KEY (id_bodega)
+CREATE TABLE ubicaciones (
+    id SERIAL,
+    nombre TEXT NOT NULL UNIQUE,
+    tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('bodega', 'tienda')),
+    PRIMARY KEY (id)
 );
 
-CREATE TABLE IF NOT EXISTS stock_bodega (
-    id_stock_bodega SERIAL,
-    id_bodega INT NOT NULL,
-    id_producto INT NOT NULL,
+CREATE TABLE clientes (
+    id SERIAL,
+    nombre TEXT NOT NULL,
+    email TEXT,
+    telefono VARCHAR(20),
+    direccion TEXT,
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE proveedores (
+    id SERIAL,
+    nombre TEXT NOT NULL,
+    email TEXT,
+    telefono VARCHAR(20),
+    direccion TEXT,
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE categorias (
+    id SERIAL,
+    nombre TEXT NOT NULL UNIQUE,
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS productos (
+    id SERIAL,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    nombre TEXT NOT NULL,
+    descripcion TEXT,
+    categoria_id INT NOT NULL,
+    proveedor_id INT NOT NULL,
+    precio_costo NUMERIC(10,2) NOT NULL,
+    precio_venta NUMERIC(10,2) NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
+    PRIMARY KEY (id)
+    FOREIGN KEY (categoria_id) REFERENCES categorias(id),
+    FOREIGN KEY (proveedor_id) REFERENCES proveedores(id)
+);
+
+CREATE TABLE inventario (
+    producto_id INT NOT NULL,
+    ubicacion_id INT NOT NULL,
+    cantidad INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (producto_id, ubicacion_id),
+    FOREIGN KEY (producto_id) REFERENCES productos(id) ON DELETE CASCADE,
+    FOREIGN KEY (ubicacion_id) REFERENCES ubicaciones(id) ON DELETE CASCADE
+);
+
+CREATE TABLE cotizaciones (
+    id SERIAL,
+    fecha TIMESTAMP NOT NULL DEFAULT NOW(),
+    cliente_id INT NOT NULL,
+    vendedor_id INT NOT NULL,
+    ubicacion_id INT NOT NULL,
+    estado VARCHAR(20) NOT NULL DEFAULT 'Pendiente' CHECK (estado IN ('Pendiente', 'Aprobada', 'Rechazada', 'Vencida')),
+    aprobada_por INT NULL,
+    fecha_aprobacion TIMESTAMP NULL,
+    PRIMARY KEY (id),
+    FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+    FOREIGN KEY (vendedor_id) REFERENCES usuarios(id),
+    FOREIGN KEY (ubicacion_id) REFERENCES ubicaciones(id),
+    FOREIGN KEY (aprobada_por) REFERENCES usuarios(id)
+);
+
+CREATE TABLE detalle_cotizacion (
+    cotizacion_id INT NOT NULL,
+    producto_id INT NOT NULL,
     cantidad INT NOT NULL,
-    PRIMARY KEY (id_stock_bodega),
-    FOREIGN KEY (id_bodega) REFERENCES bodega(id_bodega),
-    FOREIGN KEY (id_producto) REFERENCES producto(id_producto)
+    precio_unitario NUMERIC(10,2) NOT NULL,
+    PRIMARY KEY (cotizacion_id, producto_id),
+    FOREIGN KEY (cotizacion_id) REFERENCES cotizaciones(id) ON DELETE CASCADE,
+    FOREIGN KEY (producto_id) REFERENCES productos(id)
 );
 
-CREATE TABLE IF NOT EXISTS orden_pedido (
-    id_orden_pedido SERIAL,
-    fecha_crea TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    id_sucursal INT NOT NULL,
-    id_bodega INT NOT NULL,
-    estado VARCHAR(20) NOT NULL,
-    PRIMARY KEY (id_orden_pedido),
-    FOREIGN KEY (id_sucursal) REFERENCES sucursal(id_sucursal),
-    FOREIGN KEY (id_bodega) REFERENCES bodega(id_bodega)
+CREATE TABLE pedidos (
+    id SERIAL,
+    fecha TIMESTAMP NOT NULL DEFAULT NOW(),
+    cliente_id INT NOT NULL,
+    vendedor_id INT NOT NULL,
+    cotizacion_id INT NULL,
+    ubicacion_id INT NOT NULL,
+    estado VARCHAR(20) NOT NULL DEFAULT 'Pendiente' CHECK (estado IN ('Pendiente', 'Despachado', 'Completado', 'Cancelado')),
+    fecha_despacho TIMESTAMP NULL,
+    despachado_por INT NULL,
+    PRIMARY KEY (id),
+    FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+    FOREIGN KEY (vendedor_id) REFERENCES usuarios(id),
+    FOREIGN KEY (cotizacion_id) REFERENCES cotizaciones(id),
+    FOREIGN KEY (ubicacion_id) REFERENCES ubicaciones(id),
+    FOREIGN KEY (despachado_por) REFERENCES usuarios(id)
 );
 
-CREATE TABLE IF NOT EXISTS orden_pedido_item (
-    id_pedido_item SERIAL,
-    id_orden_pedido INT NOT NULL,
-    sku VARCHAR(10) NOT NULL,
+CREATE TABLE detalle_pedido (
+    pedido_id INT NOT NULL,
+    producto_id INT NOT NULL,
     cantidad INT NOT NULL,
-    PRIMARY KEY (id_pedido_item),
-    FOREIGN KEY (id_orden_pedido) REFERENCES orden_pedido(id_orden_pedido),
-    FOREIGN KEY (sku) REFERENCES producto(sku)
+    precio_unitario NUMERIC(10,2) NOT NULL,
+    PRIMARY KEY (pedido_id, producto_id),
+    FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE CASCADE,
+    FOREIGN KEY (producto_id) REFERENCES productos(id)
 );
 
-CREATE TABLE IF NOT EXISTS tipo_camion (
-    id_tipo_camion SERIAL,
-    nombre VARCHAR(50) NOT NULL,
-    descripcion VARCHAR(255),
-    PRIMARY KEY (id_tipo_camion)
+CREATE TABLE ordenes_compra (
+    id SERIAL,
+    fecha TIMESTAMP NOT NULL DEFAULT NOW(),
+    proveedor_id INT NOT NULL,
+    solicitado_por INT NOT NULL,
+    ubicacion_id INT NOT NULL,
+    estado VARCHAR(20) NOT NULL DEFAULT 'Pendiente' CHECK (estado IN ('Pendiente', 'Recibido', 'Cancelado')),
+    fecha_recepcion TIMESTAMP NULL,
+    recibido_por INT NULL,
+    PRIMARY KEY (id),
+    FOREIGN KEY (proveedor_id) REFERENCES proveedores(id),
+    FOREIGN KEY (solicitado_por) REFERENCES usuarios(id),
+    FOREIGN KEY (ubicacion_id) REFERENCES ubicaciones(id),
+    FOREIGN KEY (recibido_por) REFERENCES usuarios(id)
 );
 
-CREATE TABLE IF NOT EXISTS estado_camion(
-    id_estado_camion SERIAL,
-    nombre VARCHAR(20) NOT NULL,
-    PRIMARY KEY (id_estado_camion)
+CREATE TABLE detalle_orden_compra (
+    orden_id INT NOT NULL,
+    producto_id INT NOT NULL,
+    cantidad INT NOT NULL,
+    precio_costo NUMERIC(10,2) NOT NULL,
+    PRIMARY KEY (orden_id, producto_id),
+    FOREIGN KEY (orden_id) REFERENCES ordenes_compra(id) ON DELETE CASCADE,
+    FOREIGN KEY (producto_id) REFERENCES productos(id)
 );
 
-CREATE TABLE IF NOT EXISTS camion (
-    id_camion SERIAL,
+CREATE TABLE camiones (
+    id SERIAL,
     patente VARCHAR(10) NOT NULL UNIQUE,
-    id_tipo_camion INT NOT NULL,
-    id_estado_camion INT NOT NULL,
-    capacidad_kg DECIMAL(10,2) NOT NULL,
-    dim_largo_cm DECIMAL(5,2) NOT NULL,
-    dim_ancho_cm DECIMAL(5,2) NOT NULL,
-    dim_alto_cm DECIMAL(5,2) NOT NULL,
-    PRIMARY KEY (id_camion),
-    FOREIGN KEY (id_tipo_camion) REFERENCES tipo_camion(id_tipo_camion),
-    FOREIGN KEY (id_estado_camion) REFERENCES estado_camion(id_estado_camion)
+    marca TEXT,
+    modelo TEXT,
+    capacidad_kg NUMERIC(10,2),
+    activo BOOLEAN DEFAULT TRUE,
+    PRIMARY KEY (id)
 );
 
-CREATE TABLE IF NOT EXISTS estado_envio (
-    id_estado_envio SERIAL,
-    nombre VARCHAR(20) NOT NULL,
-    PRIMARY KEY (id_estado_envio)
+CREATE TABLE despachos (
+    id SERIAL,
+    pedido_id INT NOT NULL,
+    fecha_salida TIMESTAMP NOT NULL DEFAULT NOW(),
+    fecha_entrega TIMESTAMP,
+    estado VARCHAR(20) NOT NULL DEFAULT 'En ruta' CHECK (estado IN ('Devuelto', 'En ruta', 'Entregado', 'Cancelado')),
+    camion_id INT NOT NULL,
+    origen_id INT NOT NULL,
+    destino TEXT NOT NULL,
+    observaciones TEXT,
+    PRIMARY KEY (id),
+    FOREIGN KEY (pedido_id) REFERENCES pedidos(id),
+    FOREIGN KEY (camion_id) REFERENCES camiones(id),
+    FOREIGN KEY (origen_id) REFERENCES ubicaciones(id)
 );
 
-CREATE TABLE IF NOT EXISTS envio (
-    id_envio SERIAL,
-    id_orden_pedido INT NOT NULL,
-    id_camion INT NOT NULL,
-    id_estado_envio INT NOT NULL,
-    fecha_envio DATE NOT NULL,
-    PRIMARY KEY (id_envio),
-    FOREIGN KEY (id_orden_pedido) REFERENCES orden_pedido(id_orden_pedido),
-    FOREIGN KEY (id_camion) REFERENCES camion(id_camion),
-    FOREIGN KEY (id_estado_envio) REFERENCES estado_envio(id_estado_envio)
+CREATE TABLE detalle_despacho (
+    despacho_id INT NOT NULL,
+    producto_id INT NOT NULL,
+    cantidad_despachada INT NOT NULL,
+    PRIMARY KEY (despacho_id, producto_id),
+    FOREIGN KEY (despacho_id) REFERENCES despachos(id) ON DELETE CASCADE,
+    FOREIGN KEY (producto_id) REFERENCES productos(id)
 );
