@@ -11,15 +11,16 @@ CREATE TABLE IF NOT EXISTS sucursal (
 );
 
 CREATE TABLE IF NOT EXISTS producto (
-    sku VARCHAR(10) NOT NULL,
+    id_producto SERIAL,
+    sku VARCHAR(10) NOT NULL UNIQUE,
     nombre VARCHAR(50) NOT NULL,
     descripcion VARCHAR(255),
     peso_kg DECIMAL(5,2) NOT NULL,
-    dim_largo_cm DECIMAL(5,2) NOT NULL,
-    dim_ancho_cm DECIMAL(5,2) NOT NULL,
-    dim_alto_cm DECIMAL(5,2) NOT NULL,
-    precio_unitario DECIMAL(10,2) NOT NULL,
-    PRIMARY KEY (sku)
+    dimensiones VARCHAR(50) NOT NULL,
+    costo_base DECIMAL(10,2) NOT NULL,
+    precio_venta DECIMAL(10,2) NOT NULL,
+    activo BOOLEAN,
+    PRIMARY KEY (id_producto)
 );
 
 CREATE TABLE IF NOT EXISTS bodega (
@@ -33,11 +34,11 @@ CREATE TABLE IF NOT EXISTS bodega (
 CREATE TABLE IF NOT EXISTS stock_bodega (
     id_stock_bodega SERIAL,
     id_bodega INT NOT NULL,
-    sku VARCHAR(10) NOT NULL,
+    id_producto INT NOT NULL,
     cantidad INT NOT NULL,
     PRIMARY KEY (id_stock_bodega),
     FOREIGN KEY (id_bodega) REFERENCES bodega(id_bodega),
-    FOREIGN KEY (sku) REFERENCES producto(sku)
+    FOREIGN KEY (id_producto) REFERENCES producto(id_producto)
 );
 
 CREATE TABLE IF NOT EXISTS orden_pedido (
