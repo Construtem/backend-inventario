@@ -13,14 +13,15 @@ CREATE TABLE usuarios (
     nombre TEXT NOT NULL,
     correo TEXT NOT NULL UNIQUE,
     contrasena TEXT NOT NULL,
-    rol_id ,
-    PRIMARY KEY (id)
+    rol_id INT NOT NULL,
+    PRIMARY KEY (id),
+    FOREIGN KEY (rol_id) REFERENCES roles(id) ON DELETE CASCADE
 );
 
 CREATE TABLE ubicaciones (
     id SERIAL,
     nombre TEXT NOT NULL UNIQUE,
-    tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('bodega', 'tienda')),
+    tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('Bodega', 'Tienda')),
     PRIMARY KEY (id)
 );
 
