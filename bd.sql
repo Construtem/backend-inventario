@@ -49,7 +49,7 @@ CREATE TABLE categorias (
     PRIMARY KEY (id)
 );
 
-CREATE TABLE IF NOT EXISTS productos (
+CREATE TABLE productos (
     id SERIAL,
     codigo VARCHAR(50) NOT NULL UNIQUE,
     nombre TEXT NOT NULL,
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS productos (
     precio_costo NUMERIC(10,2) NOT NULL,
     precio_venta NUMERIC(10,2) NOT NULL,
     activo BOOLEAN NOT NULL DEFAULT TRUE,
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
     FOREIGN KEY (categoria_id) REFERENCES categorias(id),
     FOREIGN KEY (proveedor_id) REFERENCES proveedores(id)
 );
