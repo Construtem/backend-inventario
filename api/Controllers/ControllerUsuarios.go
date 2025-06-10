@@ -60,7 +60,7 @@ func CreateUsuario(c *gin.Context) {
 		return
 	}
 	// Carga el rol para la respuesta
-	db.DB.Preload("Rol").First(&usuario, usuario.ID)
+	db.DB.Preload("Rol").First(&usuario, usuario.Correo)
 	c.JSON(http.StatusCreated, usuario)
 }
 
@@ -104,7 +104,7 @@ func UpdateUsuario(c *gin.Context) {
 		return
 	}
 	// Carga el rol para la respuesta
-	db.DB.Preload("Rol").First(&usuario, usuario.ID)
+	db.DB.Preload("Rol").First(&usuario, usuario.Correo)
 	c.JSON(http.StatusOK, usuario)
 }
 
