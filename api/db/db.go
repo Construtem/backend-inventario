@@ -2,8 +2,8 @@ package db
 
 import (
 	"fmt"
-	"os"
 	"log"
+	"os"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -25,6 +25,5 @@ func Conectar() {
 		log.Fatal("Error al conectar a la base de datos:", err)
 	}
 
-	log.Println("Conexión exitosa a la base de datos")
 	DB = conn
 }
