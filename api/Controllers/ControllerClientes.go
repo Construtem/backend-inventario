@@ -4,14 +4,15 @@ import (
 	"net/http"
 	"strconv" // Necesario para ParseUint
 
-	"db/db"
+	modelos "backend-inventario/api/Models"
+	"backend-inventario/api/db"
 
 	"github.com/gin-gonic/gin"
 )
 
 // GetClientes obtiene todos los clientes
 func GetClientes(c *gin.Context) {
-	var clientes []models.Cliente
+	var clientes []modelos.Cliente
 	// preload para cargar las relaciones si las tuvieran, Cliente no tiene en este momento.
 	if err := db.DB.Find(&clientes).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener clientes"})
@@ -29,7 +30,7 @@ func GetClienteByID(c *gin.Context) {
 		return
 	}
 
-	var cliente models.Cliente
+	var cliente modelos.Cliente
 	if err := db.DB.First(&cliente, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Cliente no encontrado"})
 		return
@@ -39,7 +40,7 @@ func GetClienteByID(c *gin.Context) {
 
 // CreateCliente crea un nuevo cliente
 func CreateCliente(c *gin.Context) {
-	var cliente models.Cliente
+	var cliente modelos.Cliente
 	if err := c.ShouldBindJSON(&cliente); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -60,7 +61,7 @@ func UpdateCliente(c *gin.Context) {
 		return
 	}
 
-	var cliente models.Cliente
+	var cliente modelos.Cliente
 	if err := db.DB.First(&cliente, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Cliente no encontrado"})
 		return
@@ -88,7 +89,7 @@ func DeleteCliente(c *gin.Context) {
 		return
 	}
 
-	var cliente models.Cliente
+	var cliente modelos.Cliente
 	if err := db.DB.First(&cliente, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Cliente no encontrado"})
 		return
