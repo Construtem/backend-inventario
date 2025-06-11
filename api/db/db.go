@@ -12,6 +12,10 @@ import (
 
 var DB *gorm.DB
 
+func Exec(sql string) *gorm.DB {
+	return DB.Exec(sql)
+}
+
 func Conectar() {
 	host := os.Getenv("DB_HOST")
 	port := os.Getenv("DB_PORT")
