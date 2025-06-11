@@ -8,9 +8,9 @@ import (
 
 func MigrarTablas(db *gorm.DB) {
 	err := db.AutoMigrate(
+		&Categoria{},
 		&Cliente{},
 		&Producto{},
-		&Categoria{},
 		&Camion{},
 		&Pedido{},
 		&Cotizacion{},
