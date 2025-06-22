@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: back-inventario-ingress
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - api-inventario.tssw.cl
+      secretName: api-inventario-tls
+  rules:
+    - host: api-inventario.tssw.cl
+      http:
+        paths:
+          - path: / # Aquí puedes cambiar el path si tu backend escucha en algo específico
+            pathType: Prefix
+            backend:
+              service:
+                name: back-inventario-service
+                port:
+                  number: 80
