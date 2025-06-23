@@ -61,7 +61,6 @@ type Cotizacion struct {
 	FechaAprobacion *time.Time
 }
 type Usuario struct {
-	Correo string `gorm:"primaryKey;not null" json:"correo"`
 	UID    string `gorm:"not null;unique" json:"uid"`
 	Nombre string `gorm:"size:255;not null"`
 	RolID  uint
