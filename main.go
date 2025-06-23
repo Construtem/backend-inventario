@@ -1,16 +1,50 @@
 package main
 
-import "fmt"
-import "github.com/gin-gonic/gin"
+import (
+	"fmt"
+	"log"
+	"os"
+
+	modelos "backend-inventario/api/Models"
+	"backend-inventario/api/Routes"
+	"backend-inventario/api/db"
+
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
+)
 
 func main() {
-	fmt.Println("Corriendo en localhost:8080 !!!")
-	
-  	router := gin.Default()
-  	router.GET("/", func(c *gin.Context) {
-  	  	c.JSON(200, gin.H{
-  	    	"message": "pong",
-  	  	})
-  	})
-  	router.Run() // listen and serve on 0.0.0.0:8080
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error al cargar .env")
+	}
+
+	db.Conectar()
+	fmt.Println("Conexión a la base de datos exitosa")
+
+	modelos.MigrarTablas(db.DB)
+	fmt.Println("Migración de tablas exitosa")
+
+	router := gin.Default()
+
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"}, // Permite tu frontend de Next.js
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		AllowCredentials: true,
+	}))
+
+	Routes.RegisterRoutes(router)
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // Puerto por defecto
+	}
+
+	err = router.Run(":" + port)
+	if err != nil {
+		log.Fatalf("Error al iniciar el servidor: %v", err)
+	}
+	fmt.Printf("Servidor corriendo en http://localhost:%s\n", port)
 }
