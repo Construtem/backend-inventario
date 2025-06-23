@@ -1,6 +1,7 @@
 # Backend - Inventario
 
-Este microservicio gestiona el inventario y despacho en Construtem.
+- Este microservicio gestiona el inventario y despacho en Construtem.
+- Este microservicio será desplegado en la siguiente URL: https://api-inventario.tssw.cl
 
 ## 🛠️ Tecnologías
 - Go (Lenguaje)
@@ -18,7 +19,7 @@ Este microservicio gestiona el inventario y despacho en Construtem.
 - Docker Desktop instalado
 - Git instalado 
 
-  ## Instalación (entorno de desarrollo)
+## Instalación (entorno de desarrollo)
 
 1. Clonar el repositorio en el directorio deseado:
 
