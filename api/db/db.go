@@ -44,5 +44,13 @@ func Conectar() {
 		log.Fatalf("Error al conectar a la base de datos: %v", err)
 	}
 
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatalf("Error al obtener la instancia de la base de datos: %v", err)
+	}
+
+	sqlDB.SetMaxOpenConns(5)
+	sqlDB.SetMaxIdleConns(2)
+
 	DB = db
 }
