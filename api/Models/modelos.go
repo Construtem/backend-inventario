@@ -37,31 +37,31 @@ type Pedido struct {
 	Fecha         time.Time `gorm:"not null"`
 	ClienteID     uint
 	Cliente       Cliente `gorm:"foreignKey:ClienteID"` // Relación con Cliente
-	VendedorID    uint
-	Vendedor      Usuario     `gorm:"foreignKey:VendedorID"` // Relación con Usuario (Vendedor)
+	VendedorID    string
+	Vendedor      Usuario     `gorm:"foreignKey:VendedorID;references:UID"` // Relación con Usuario (Vendedor)
 	CotizacionID  *uint       // Puede ser nulo
 	Cotizacion    *Cotizacion `gorm:"foreignKey:CotizacionID"` // Relación con Cotizacion (puede ser nula)
 	UbicacionID   uint
 	Ubicacion     Ubicacion `gorm:"foreignKey:UbicacionID"` // Relación con Ubicacion
 	Estado        string    `gorm:"size:50;not null"`
 	FechaDespacho *time.Time
-	DespachadoPor *uint
-	Despachador   *Usuario `gorm:"foreignKey:DespachadoPor"` // Relación con Usuario (Despachador, puede ser nulo)
+	DespachadoPor *string
+	Despachador   *Usuario `gorm:"foreignKey:DespachadoPor;references:UID"` // Relación con Usuario (Despachador, puede ser nulo)
 }
 type Cotizacion struct {
 	ID              uint      `gorm:"primaryKey"`
 	Fecha           time.Time `gorm:"not null"`
 	ClienteID       uint
 	Cliente         Cliente `gorm:"foreignKey:ClienteID"` // Relación con Cliente
-	VendedorID      uint
-	Vendedor        Usuario `gorm:"foreignKey:VendedorID"` // Relación con Usuario (Vendedor)
+	VendedorID      string
+	Vendedor        Usuario `gorm:"foreignKey:VendedorID;references:UID"` // Relación con Usuario (Vendedor)
 	UbicacionID     uint
 	Ubicacion       Ubicacion `gorm:"foreignKey:UbicacionID"` // Relación con Ubicacion
 	Estado          string    `gorm:"size:50;not null"`
 	FechaAprobacion *time.Time
 }
 type Usuario struct {
-	UID    string `gorm:"not null;unique" json:"uid"`
+	UID    string `gorm:"primaryKey;size:100;not null;unique" json:"uid"`
 	Nombre string `gorm:"size:255;not null"`
 	RolID  uint
 	Rol    Rol `gorm:"foreignKey:RolID"` // Relación con Rol
@@ -112,14 +112,14 @@ type OrdenCompra struct {
 	Fecha          time.Time `gorm:"not null"`
 	ProveedorID    uint
 	Proveedor      Proveedor `gorm:"foreignKey:ProveedorID"` // Relación con Proveedor
-	SolicitadoPor  uint
-	Solicitante    Usuario `gorm:"foreignKey:SolicitadoPor"` // Relación con Usuario (Solicitante)
+	SolicitadoPor  string
+	Solicitante    Usuario `gorm:"foreignKey:SolicitadoPor;references:UID"` // Relación con Usuario (Solicitante)
 	UbicacionID    uint
 	Ubicacion      Ubicacion `gorm:"foreignKey:UbicacionID"` // Relación con Ubicacion (donde se recibirá)
 	Estado         string    `gorm:"size:50;not null"`       // Ej: 'pendiente', 'aprobada', 'recibida', 'cancelada'
 	FechaRecepcion *time.Time
-	RecibidoPor    *uint
-	Receptor       *Usuario `gorm:"foreignKey:RecibidoPor"` // Relación con Usuario (Receptor, puede ser nulo)
+	RecibidoPor    *string
+	Receptor       *Usuario `gorm:"foreignKey:RecibidoPor;references:UID"` // Relación con Usuario (Receptor, puede ser nulo)
 }
 
 type DetalleCotizacion struct {
