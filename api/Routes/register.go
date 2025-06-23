@@ -43,8 +43,8 @@ func RegisterRoutes(router *gin.Engine) {
 
 	// Rutas para Usuarios
 	api.GET("/usuarios", Controllers.GetUsuarios)
-	api.GET("/usuarios/:id", Controllers.GetUsuarioByID)
 	api.POST("/usuarios", Controllers.CreateUsuario)
+	api.GET("/usuarios/:id", Controllers.GetUsuarioByID)
 	api.PUT("/usuarios/:id", Controllers.UpdateUsuario)
 	api.DELETE("/usuarios/:id", Controllers.DeleteUsuario)
 
