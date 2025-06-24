@@ -110,6 +110,7 @@ func RegisterRoutes(router *gin.Engine) {
 	api.POST("/inventario", Controllers.CreateInventario)
 	api.PUT("/inventario/:id", Controllers.UpdateInventario)
 	api.DELETE("/inventario/:id", Controllers.DeleteInventario)
+	api.POST("/inventario/carga-masiva", Controllers.CargaMasivaInventario)
 
 	// Rutas para DetalleCotizacion (Considera si necesitas CRUD completo para detalles o solo dentro del contexto de la entidad padre)
 	api.GET("/detalle_cotizacion", Controllers.GetDetallesCotizacion)
