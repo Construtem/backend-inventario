@@ -42,7 +42,7 @@ func CreateUsuario(c *gin.Context) {
 	}
 
 	if err := db.DB.Create(&usuario).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al crear usuario"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al crear usuario", "detalle": err.Error()})
 		return
 	}
 	// Carga el rol para la respuesta
