@@ -1,8 +1,11 @@
 package Controllers
 
 import (
+	"encoding/csv"
+	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	modelos "backend-inventario/api/Models"
 	"backend-inventario/api/db"
@@ -106,4 +109,118 @@ func DeleteInventario(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Registro de inventario eliminado exitosamente"})
+}
+
+func CargaMasivaInventario(c *gin.Context) {
+	// Validacion de permisos (opcional)
+	// Descomentar y ajustar según sea necesario para la autenticación y autorización
+	/*
+		user, exists := c.Get("user")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Usuario no autenticado"})
+			return
+		}
+		if user.(modelos.Usuario).RolID != 1 {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Acceso restringido"})
+			return
+		}
+	*/
+
+	// recepcion del archivo .csv
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Archivo no proporcionado"})
+		return
+	}
+
+	openedFile, err := file.Open()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al abrir el archivo"})
+		return
+	}
+	defer openedFile.Close()
+
+	// lectura del archivo CSV
+	reader := csv.NewReader(openedFile)
+	reader.Comma = ','
+	reader.LazyQuotes = true
+
+	// encabezados
+	headers, err := reader.Read()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al leer el encabezado CSV"})
+		return
+	}
+
+	// mapa para obtener indices por nombre
+	index := map[string]int{}
+	for i, h := range headers {
+		index[h] = i
+	}
+
+	const UbicacionID = 1 // ID de la ubicación por defecto, ajustar según sea necesario
+
+	var productos []modelos.Producto
+	var inventarios []modelos.Inventario
+	for {
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al leer el registro CSV"})
+			return
+		}
+
+		// validacion de datos
+		precioCosto, err := strconv.ParseFloat(record[index["Costo base (c/u)"]], 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Costo base inválido en csv"})
+			return
+		}
+
+		precioVenta, err := strconv.ParseFloat(record[index["Precio de venta (c/u"]], 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Precio de venta inválido en csv"})
+			return
+		}
+
+		activo := strings.ToLower(record[index["Activo"]]) == "activo"
+
+		stock, err := strconv.Atoi(record[index["Stock"]])
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Stock inválido en csv"})
+			return
+		}
+
+		producto := modelos.Producto{
+			Codigo:      record[index["SKU"]],
+			Descripcion: record[index["Descripción"]],
+			PrecioCosto: precioCosto,
+			PrecioVenta: precioVenta,
+			Activo:      activo,
+		}
+		productos = append(productos, producto)
+
+		inventario := modelos.Inventario{
+			UbicacionID: UbicacionID,
+			Cantidad:    stock,
+		}
+		inventarios = append(inventarios, inventario)
+
+	}
+	for i := range productos {
+		if err := db.DB.Create(&productos[i]).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error insertando productos"})
+			return
+		}
+		inventarios[i].ProductoID = productos[i].ID
+		if err := db.DB.Create(&inventarios[i]).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error insertando inventarios"})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Carga masiva de inventario completada exitosamente"})
 }
