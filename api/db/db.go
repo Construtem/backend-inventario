@@ -10,13 +10,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-var DB *gorm.DB
-
-func Exec(sql string) *gorm.DB {
-	return DB.Exec(sql)
-}
-
-func Conectar() {
+func ConectarDB() (*gorm.DB, error) {
 	host := os.Getenv("DB_HOST")
 	port := os.Getenv("DB_PORT")
 	user := os.Getenv("DB_USER")
@@ -44,5 +38,5 @@ func Conectar() {
 		log.Fatalf("Error al conectar a la base de datos: %v", err)
 	}
 
-	DB = db
+	return db, nil
 }
