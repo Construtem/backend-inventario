@@ -34,10 +34,13 @@ type TipoSucursal struct {
 }
 
 type Sucursal struct {
-	ID       uint   `gorm:"primaryKey" json:"id"`
-	Nombre   string `gorm:"size:100;not null" json:"nombre"`
-	Telefono string `gorm:"size:20;not null" json:"telefono"`
-	TipoID   uint   `gorm:"column:tipo_id;not null" json:"tipo_id"`
+	ID        uint   `gorm:"primaryKey" json:"id"`
+	Nombre    string `gorm:"size:100;not null" json:"nombre"`
+	Telefono  string `gorm:"size:20;not null" json:"telefono"`
+	Direccion string `gorm:"size:200;not null" json:"direccion"`
+	Comuna    string `gorm:"size:100;not null" json:"comuna"`
+	Ciudad    string `gorm:"size:100;not null" json:"ciudad"`
+	TipoID    uint   `gorm:"column:tipo_id;not null" json:"tipo_id"`
 
 	Tipo TipoSucursal `gorm:"foreignKey:TipoID;references:ID;constraint:OnDelete:CASCADE" json:"tipo"`
 }
