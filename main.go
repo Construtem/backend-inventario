@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	modelos "backend-inventario/api/Models"
+	//	modelos "backend-inventario/api/Models"
 	"backend-inventario/api/Routes"
 	"backend-inventario/api/db"
 
@@ -17,14 +17,17 @@ import (
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error al cargar .env")
+		log.Fatal("Error al cargar archivo .env")
 	}
 
-	db.Conectar()
+	database, err := db.ConectarDB()
+	if err != nil {
+		log.Fatalf("Error al conectar a la base de datos: %v", err)
+	}
 	fmt.Println("Conexión a la base de datos exitosa")
 
-	modelos.MigrarTablas(db.DB)
-	fmt.Println("Migración de tablas exitosa")
+	//	modelos.MigrarTablas(database)
+	//	fmt.Println("Migración de tablas exitosa")
 
 	router := gin.Default()
 
@@ -35,15 +38,14 @@ func main() {
 		AllowCredentials: true,
 	}))
 
-	Routes.RegisterRoutes(router)
+	Routes.RegisterRoutes(router, database)
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080" // Puerto por defecto
 	}
 
-	err = router.Run(":" + port)
-	if err != nil {
+	if err := router.Run(":" + port); err != nil {
 		log.Fatalf("Error al iniciar el servidor: %v", err)
 	}
 	fmt.Printf("Servidor corriendo en http://localhost:%s\n", port)
