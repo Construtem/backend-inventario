@@ -51,4 +51,25 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB) {
 	api.POST("/tipos-sucursal", Handlers.CreateTipoSucursalHandler(db))
 	api.PUT("/tipos-sucursal/:id", Handlers.UpdateTipoSucursalHandler(db))
 	api.DELETE("/tipos-sucursal/:id", Handlers.DeleteTipoSucursalHandler(db))
+
+	// Rutas para Despachos
+	api.GET("/despachos", Handlers.GetDespachosHandler(db))
+	api.GET("/despachos/:id", Handlers.GetDespachoByIDHandler(db))
+	api.POST("/despachos", Handlers.CreateDespachoHandler(db))
+	api.PUT("/despachos/:id", Handlers.UpdateDespachoHandler(db))
+	api.DELETE("/despachos/:id", Handlers.DeleteDespachoHandler(db))
+
+	// Rutas para Tipos de Camion
+	api.GET("/tipos-camion", Handlers.GetTipoCamionHandler(db))
+	api.GET("/tipos-camion/:id", Handlers.GetTipoCamionByIDHandler(db))
+	api.POST("/tipos-camion", Handlers.CreateTipoCamionHandler(db))
+	api.PUT("/tipos-camion/:id", Handlers.UpdateTipoCamionHandler(db))
+	api.DELETE("/tipos-camion/:id", Handlers.DeleteTipoCamionHandler(db))
+
+	// Rutas para Camiones
+	api.GET("/camiones", Handlers.GetCamionesHandler(db))
+	api.GET("/camiones/:id", Handlers.GetCamionByIDHandler(db))
+	api.POST("/camiones", Handlers.CreateCamionHandler(db))
+	api.PUT("/camiones/:id", Handlers.UpdateCamionHandler(db))
+	api.DELETE("/camiones/:id", Handlers.DeleteCamionHandler(db))
 }
