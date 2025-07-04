@@ -33,6 +33,10 @@ type TipoSucursal struct {
 	Nombre string `gorm:"size:50;not null" json:"nombre"`
 }
 
+func (TipoSucursal) TableName() string {
+	return "tipo_sucursal"
+}
+
 type Sucursal struct {
 	ID        uint   `gorm:"primaryKey" json:"id"`
 	Nombre    string `gorm:"size:100;not null" json:"nombre"`

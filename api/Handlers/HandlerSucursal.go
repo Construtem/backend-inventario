@@ -14,7 +14,7 @@ func GetSucursalesHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		sucursales, err := Controllers.GetSucursales(db)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener sucursales"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener sucursales", "details": err.Error()})
 			return
 		}
 		c.JSON(http.StatusOK, sucursales)
@@ -32,7 +32,7 @@ func GetSucursalByIDHandler(db *gorm.DB) gin.HandlerFunc {
 
 		sucursal, err := Controllers.GetSucursalByID(db, uint(id))
 		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Sucursal no encontrada"})
+			c.JSON(http.StatusNotFound, gin.H{"error": "Sucursal no encontrada", "details": err.Error()})
 			return
 		}
 		c.JSON(http.StatusOK, sucursal)
