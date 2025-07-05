@@ -104,6 +104,10 @@ type DirCliente struct {
 	Cliente Cliente `gorm:"foreignKey:ClienteID;references:ID;constraint:OnDelete:CASCADE" json:"cliente"`
 }
 
+func (DirCliente) TableName() string {
+	return "dir_cliente"
+}
+
 type Cotizacion struct {
 	ID           uint      `gorm:"primaryKey" json:"id"`
 	FechaCrea    time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"fecha_crea"`
@@ -117,6 +121,10 @@ type Cotizacion struct {
 	Usuario Usuario `gorm:"foreignKey:UserID;references:Email;constraint:OnDelete:CASCADE" json:"usuario"`
 }
 
+func (Cotizacion) TableName() string {
+	return "cotizaciones"
+}
+
 type CotizacionItem struct {
 	CotizacionID uint   `gorm:"primaryKey;column:cotizacion_id" json:"cotizacion_id"`
 	ProductoID   string `gorm:"primaryKey;size:20;column:producto_id" json:"producto_id"`
@@ -126,6 +134,10 @@ type CotizacionItem struct {
 	Cotizacion Cotizacion `gorm:"foreignKey:CotizacionID;references:ID;constraint:OnDelete:CASCADE" json:"cotizacion"`
 	Producto   Producto   `gorm:"foreignKey:ProductoID;references:SKU;constraint:OnDelete:CASCADE" json:"producto"`
 	Sucursal   Sucursal   `gorm:"foreignKey:SucursalID;references:ID;constraint:OnDelete:CASCADE" json:"sucursal"`
+}
+
+func (CotizacionItem) TableName() string {
+	return "cotizacion_item"
 }
 
 type TipoCamion struct {
@@ -143,6 +155,10 @@ type Camion struct {
 	Tipo TipoCamion `gorm:"foreignKey:TipoID;references:ID;constraint:OnDelete:CASCADE" json:"tipo"`
 }
 
+func (Camion) TableName() string {
+	return "camiones"
+}
+
 type Despacho struct {
 	ID            uint      `gorm:"primaryKey" json:"id"`
 	CotizacionID  uint      `gorm:"column:cotizacion_id;not null" json:"cotizacion_id"`
@@ -152,10 +168,15 @@ type Despacho struct {
 	FechaDespacho time.Time `gorm:"not null" json:"fecha_despacho"`
 	ValorDespacho float64   `gorm:"type:numeric(10,2);not null" json:"valor_despacho"`
 
-	Cotizacion        Cotizacion `gorm:"foreignKey:CotizacionID;references:ID;constraint:OnDelete:CASCADE" json:"cotizacion"`
-	Camion            Camion     `gorm:"foreignKey:CamionID;references:ID;constraint:OnDelete:CASCADE" json:"camion"`
-	OrigenSucursal    Sucursal   `gorm:"foreignKey:Origen;references:ID;constraint:OnDelete:CASCADE" json:"origen_sucursal"`
-	DestinoDirCliente DirCliente `gorm:"foreignKey:Destino;references:ID;constraint:OnDelete:CASCADE" json:"destino_dir_cliente"`
+	Cotizacion        Cotizacion          `gorm:"foreignKey:CotizacionID;references:ID;constraint:OnDelete:CASCADE" json:"cotizacion"`
+	Camion            Camion              `gorm:"foreignKey:CamionID;references:ID;constraint:OnDelete:CASCADE" json:"camion"`
+	OrigenSucursal    Sucursal            `gorm:"foreignKey:Origen;references:ID;constraint:OnDelete:CASCADE" json:"origen_sucursal"`
+	DestinoDirCliente DirCliente          `gorm:"foreignKey:Destino;references:ID;constraint:OnDelete:CASCADE" json:"destino_dir_cliente"`
+	ProductosDespacho []ProductosDespacho `gorm:"foreignKey:DespachoID;references:ID;constraint:OnDelete:CASCADE" json:"productos"`
+}
+
+func (Despacho) TableName() string {
+	return "despacho"
 }
 
 type ProductosDespacho struct {
@@ -165,4 +186,8 @@ type ProductosDespacho struct {
 
 	Despacho Despacho `gorm:"foreignKey:DespachoID;references:ID;constraint:OnDelete:CASCADE" json:"despacho"`
 	Producto Producto `gorm:"foreignKey:ProductoID;references:SKU;constraint:OnDelete:CASCADE" json:"producto"`
+}
+
+func (ProductosDespacho) TableName() string {
+	return "productos_despacho"
 }
