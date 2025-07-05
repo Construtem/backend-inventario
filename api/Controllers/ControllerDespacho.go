@@ -8,6 +8,13 @@ import (
 	"gorm.io/gorm"
 )
 
+type DespachoConTotales struct {
+	modelos.Despacho
+	CantidadItems     int                         `json:"cantidad_items"`
+	TotalKg           float64                     `json:"total_kg"`
+	ProductosDespacho []modelos.ProductosDespacho `json:"items"`
+}
+
 func CreateDespacho(db *gorm.DB, despacho *modelos.Despacho, productos []modelos.ProductosDespacho) error {
 	return db.Transaction(func(tx *gorm.DB) error {
 		// Validar que la fecha de despacho no sea en el pasado
@@ -41,28 +48,76 @@ func CreateDespacho(db *gorm.DB, despacho *modelos.Despacho, productos []modelos
 	})
 }
 
-func GetDespachos(db *gorm.DB) ([]modelos.Despacho, error) {
+func GetDespachos(db *gorm.DB) ([]DespachoConTotales, error) {
 	var despachos []modelos.Despacho
-	if err := db.Preload("Cotizacion").
+
+	err := db.
+		Preload("Cotizacion.Cliente").
 		Preload("Camion").
 		Preload("OrigenSucursal").
 		Preload("DestinoDirCliente").
-		Find(&despachos).Error; err != nil {
+		Find(&despachos).Error
+	if err != nil {
 		return nil, err
 	}
-	return despachos, nil
+
+	var resultado []DespachoConTotales
+
+	for _, d := range despachos {
+		var items []modelos.CotizacionItem
+		err := db.
+			Table("cotizacion_item").
+			Preload("Producto").
+			Where("cotizacion_id = ?", d.CotizacionID).
+			Find(&items).Error
+		if err != nil {
+			return nil, err
+		}
+
+		totalKg := 0.0
+		totalItems := 0
+
+		for _, item := range items {
+			totalItems += item.Cantidad
+			totalKg += float64(item.Cantidad) * item.Producto.Peso
+		}
+
+		resultado = append(resultado, DespachoConTotales{
+			Despacho:      d,
+			CantidadItems: totalItems,
+			TotalKg:       totalKg,
+		})
+	}
+	return resultado, nil
 }
 
-func GetDespachoByID(db *gorm.DB, id uint) (*modelos.Despacho, error) {
+func GetDespachoByID(db *gorm.DB, id uint) (*DespachoConTotales, error) {
 	var despacho modelos.Despacho
-	if err := db.Preload("Cotizacion").
+	err := db.
+		Preload("Cotizacion.Cliente").
+		Preload("Cotizacion").
 		Preload("Camion").
 		Preload("OrigenSucursal").
 		Preload("DestinoDirCliente").
-		First(&despacho, "id = ?", id).Error; err != nil {
+		Preload("ProductosDespacho.Producto").
+		First(&despacho, "id = ?", id).Error
+	if err != nil {
 		return nil, err
 	}
-	return &despacho, nil
+
+	var totalKg float64
+	var totalItems int
+	for _, p := range despacho.ProductosDespacho {
+		totalItems += p.Cantidad
+		totalKg += float64(p.Cantidad) * p.Producto.Peso
+	}
+
+	resultado := DespachoConTotales{
+		Despacho:      despacho,
+		CantidadItems: totalItems,
+		TotalKg:       totalKg,
+	}
+	return &resultado, nil
 }
 
 func UpdateDespacho(db *gorm.DB, id uint, actualizado *modelos.Despacho) error {
