@@ -8,23 +8,23 @@ import (
 
 func MigrarTablas(db *gorm.DB) {
 	err := db.AutoMigrate(
-		&Categoria{},
-		&Cliente{},
 		&Producto{},
-		&Camion{},
-		&Pedido{},
-		&Cotizacion{},
-		&Usuario{},
-		&Rol{},
-		&Ubicacion{},
 		&Proveedor{},
-		&Inventario{},
+		&StockProveedor{},
+		&TipoSucursal{},
+		&Sucursal{},
+		&StockSucursal{},
+		&Rol{},
+		&Usuario{},
+		&TipoCliente{},
+		&Cliente{},
+		&DirCliente{},
+		&Cotizacion{},
+		&CotizacionItem{},
+		&TipoCamion{},
+		&Camion{},
 		&Despacho{},
-		&OrdenCompra{},
-		&DetalleCotizacion{},
-		&DetalleOrdenCompra{},
-		&DetallePedido{},
-		&DetalleDespacho{},
+		&ProductosDespacho{},
 	)
 	if err != nil {
 		log.Fatal("Error al migrar la base de datos:", err)
