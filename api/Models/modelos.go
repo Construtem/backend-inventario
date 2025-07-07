@@ -14,9 +14,17 @@ type Producto struct {
 	Precio      float64 `gorm:"type:numeric(10,2);not null" json:"precio"`
 }
 
+func (Producto) TableName() string {
+	return "productos"
+}
+
 type Proveedor struct {
 	ID    uint   `gorm:"primaryKey" json:"id"`
 	Marca string `gorm:"size:30;not null" json:"marca"`
+}
+
+func (Proveedor) TableName() string {
+	return "proveedores"
 }
 
 type StockProveedor struct {
@@ -26,6 +34,10 @@ type StockProveedor struct {
 
 	Proveedor Proveedor `gorm:"foreignKey:ProveedorID;references:ID;constraint:OnDelete:CASCADE" json:"proveedor"`
 	Producto  Producto  `gorm:"foreignKey:ProductoID;references:SKU;constraint:OnDelete:CASCADE" json:"producto"`
+}
+
+func (StockProveedor) TableName() string {
+	return "stock_proveedor"
 }
 
 type TipoSucursal struct {
@@ -63,9 +75,17 @@ type StockSucursal struct {
 	Sucursal Sucursal `gorm:"foreignKey:SucursalID;references:ID;constraint:OnDelete:CASCADE" json:"sucursal"`
 }
 
+func (StockSucursal) TableName() string {
+	return "stock_sucursal"
+}
+
 type Rol struct {
 	ID     uint   `gorm:"primaryKey" json:"id"`
 	Nombre string `gorm:"size:50;not null" json:"nombre"`
+}
+
+func (Rol) TableName() string {
+	return "roles"
 }
 
 type Usuario struct {
@@ -79,6 +99,10 @@ type Usuario struct {
 type TipoCliente struct {
 	ID     uint   `gorm:"primaryKey" json:"id"`
 	Nombre string `gorm:"size:50;not null" json:"nombre"`
+}
+
+func (TipoCliente) TableName() string {
+	return "tipo_cliente"
 }
 
 type Cliente struct {
@@ -144,6 +168,10 @@ type TipoCamion struct {
 	ID         uint    `gorm:"primaryKey" json:"id"`
 	Volumen    float64 `gorm:"type:numeric(10,2);not null" json:"volumen"`
 	PesoMaximo float64 `gorm:"type:numeric(10,2);not null" json:"peso_maximo"`
+}
+
+func (TipoCamion) TableName() string {
+	return "tipo_camion"
 }
 
 type Camion struct {
