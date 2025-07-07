@@ -56,6 +56,7 @@ func GetDespachos(db *gorm.DB) ([]DespachoConTotales, error) {
 		Preload("Camion").
 		Preload("OrigenSucursal").
 		Preload("DestinoDirCliente").
+		Preload("ProductosDespacho.Producto").
 		Find(&despachos).Error
 	if err != nil {
 		return nil, err
@@ -63,27 +64,17 @@ func GetDespachos(db *gorm.DB) ([]DespachoConTotales, error) {
 
 	var resultado []DespachoConTotales
 
-	for _, d := range despachos {
-		var items []modelos.CotizacionItem
-		err := db.
-			Table("cotizacion_item").
-			Preload("Producto").
-			Where("cotizacion_id = ?", d.CotizacionID).
-			Find(&items).Error
-		if err != nil {
-			return nil, err
-		}
-
+	for _, despacho := range despachos {
 		totalKg := 0.0
 		totalItems := 0
 
-		for _, item := range items {
-			totalItems += item.Cantidad
-			totalKg += float64(item.Cantidad) * item.Producto.Peso
+		for _, producto := range despacho.ProductosDespacho {
+			totalItems += producto.Cantidad
+			totalKg += float64(producto.Cantidad) * producto.Producto.Peso
 		}
 
 		resultado = append(resultado, DespachoConTotales{
-			Despacho:      d,
+			Despacho:      despacho,
 			CantidadItems: totalItems,
 			TotalKg:       totalKg,
 		})
