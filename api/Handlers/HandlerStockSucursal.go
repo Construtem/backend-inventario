@@ -14,7 +14,7 @@ func GetStockSucursalHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		stocks, err := Controllers.GetStockSucursal(db)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener stock por sucursal"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener stock por sucursal", "details": err.Error()})
 			return
 		}
 		c.JSON(http.StatusOK, stocks)
@@ -33,7 +33,7 @@ func GetStockSucursalByIDHandler(db *gorm.DB) gin.HandlerFunc {
 
 		stock, err := Controllers.GetStockSucursalByID(db, uint(sucursalID), sku)
 		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Registro de stock no encontrado"})
+			c.JSON(http.StatusNotFound, gin.H{"error": "Registro de stock no encontrado", "details": err.Error()})
 			return
 		}
 		c.JSON(http.StatusOK, stock)

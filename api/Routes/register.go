@@ -72,4 +72,53 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB) {
 	api.POST("/camiones", Handlers.CreateCamionHandler(db))
 	api.PUT("/camiones/:id", Handlers.UpdateCamionHandler(db))
 	api.DELETE("/camiones/:id", Handlers.DeleteCamionHandler(db))
+
+	// Rutas para Clientes
+	api.GET("/clientes", Handlers.GetClientesHandler(db))
+	api.GET("/clientes/:id", Handlers.GetClienteByIDHandler(db))
+	api.POST("/clientes", Handlers.CreateClienteHandler(db))
+	api.PUT("/clientes/:id", Handlers.UpdateClienteHandler(db))
+	api.DELETE("/clientes/:id", Handlers.DeleteClienteHandler(db))
+
+	// Rutas para Tipo de Clientes
+	api.GET("/tipos-clientes", Handlers.GetTipoClienteHandler(db))
+	api.GET("/tipos-clientes/:id", Handlers.GetTipoClienteByIDHandler(db))
+	api.POST("/tipos-clientes", Handlers.CreateTipoClienteHandler(db))
+	api.PUT("/tipos-clientes/:id", Handlers.UpdateTipoClienteHandler(db))
+	api.DELETE("/tipos-clientes/:id", Handlers.DeleteTipoClienteHandler(db))
+
+	// Rutas para Direcciones de Clientes
+	api.GET("/direcciones-clientes", Handlers.GetDirClientesHandler(db))
+	api.GET("/direcciones-clientes/:id", Handlers.GetDirClienteByIDHandler(db))
+	api.POST("/direcciones-clientes", Handlers.CreateDirClienteHandler(db))
+	api.PUT("/direcciones-clientes/:id", Handlers.UpdateDirClienteHandler(db))
+	api.DELETE("/direcciones-clientes/:id", Handlers.DeleteDirClienteHandler(db))
+
+	// Rutas para Roles
+	api.GET("/rol", Handlers.GetRolesHandler(db))
+	api.GET("/rol/:id", Handlers.GetRolByIDHandler(db))
+	api.POST("/rol", Handlers.CreateRolHandler(db))
+	api.PUT("/rol/:id", Handlers.UpdateRolHandler(db))
+	api.DELETE("/rol/:id", Handlers.DeleteRolHandler(db))
+
+	// Rutas para Usuarios
+	api.GET("/usuarios", Handlers.GetUsuariosHandler(db))
+	api.GET("/usuarios/:email", Handlers.GetUsuarioByEmailHandler(db))
+	api.POST("/usuarios", Handlers.CreateUsuarioHandler(db))
+	api.PUT("/usuarios/:email", Handlers.UpdateUsuarioHandler(db))
+	api.DELETE("/usuarios/:email", Handlers.DeleteUsuarioHandler(db))
+
+	// Rutas para Proveedores
+	api.GET("/proveedores", Handlers.GetProveedoresHandler(db))
+	api.GET("/proveedores/:id", Handlers.GetProveedorByIDHandler(db))
+	api.POST("/proveedores", Handlers.CreateProveedorHandler(db))
+	api.PUT("/proveedores/:id", Handlers.UpdateProveedorHandler(db))
+	api.DELETE("/proveedores/:id", Handlers.DeleteProveedorHandler(db))
+
+	// Rutas para Stock de Proveedores
+	api.GET("/stock-proveedor", Handlers.GetStockProveedorHandler(db))
+	api.GET("/stock-proveedor/:proveedor_id/:producto_id", Handlers.GetStockProveedorByIDHandler(db))
+	api.POST("/stock-proveedor", Handlers.CreateStockProveedorHandler(db))
+	api.PUT("/stock-proveedor/:proveedor_id/:producto_id", Handlers.UpdateStockProveedorHandler(db))
+	api.DELETE("/stock-proveedor/:proveedor_id/:producto_id", Handlers.DeleteStockProveedorHandler(db))
 }
