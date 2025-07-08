@@ -52,10 +52,11 @@ func GetDespachos(db *gorm.DB) ([]DespachoConTotales, error) {
 	var despachos []modelos.Despacho
 
 	err := db.
-		Preload("Cotizacion.Cliente").
-		Preload("Camion").
-		Preload("OrigenSucursal").
-		Preload("DestinoDirCliente").
+		Preload("Cotizacion.Cliente.Tipo").
+		Preload("Cotizacion.Usuario.Rol").
+		Preload("Camion.Tipo").
+		Preload("OrigenSucursal.Tipo").
+		Preload("DestinoDirCliente.Cliente.Tipo").
 		Preload("ProductosDespacho.Producto").
 		Find(&despachos).Error
 	if err != nil {
