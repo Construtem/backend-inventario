@@ -10,7 +10,7 @@ import (
 // GetProductos obtiene todos los productos
 func GetProductos(db *gorm.DB) ([]modelos.Producto, error) {
 	var productos []modelos.Producto
-	if err := db.Find(&productos).Error; err != nil {
+	if err := db.Preload("Proveedor").Find(&productos).Error; err != nil {
 		return nil, err
 	}
 	return productos, nil

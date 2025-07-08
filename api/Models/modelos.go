@@ -106,12 +106,11 @@ func (TipoCliente) TableName() string {
 }
 
 type Cliente struct {
-	ID          uint   `gorm:"primaryKey" json:"id"`
+	Rut         string `gorm:"primaryKey;size:12;not null;unique" json:"rut"`
 	Nombre      string `gorm:"size:100;not null" json:"nombre"`
 	Telefono    string `gorm:"size:20" json:"telefono"`
 	Email       string `gorm:"size:100;not null;unique" json:"email"`
 	RazonSocial string `gorm:"size:100" json:"razon_social"`
-	Rut         string `gorm:"size:12;not null;unique" json:"rut"`
 	TipoID      uint   `gorm:"column:tipo_id;not null" json:"tipo_id"`
 
 	Tipo TipoCliente `gorm:"foreignKey:TipoID;references:ID;constraint:OnDelete:CASCADE" json:"tipo"`
@@ -119,13 +118,13 @@ type Cliente struct {
 
 type DirCliente struct {
 	ID        uint   `gorm:"primaryKey" json:"id"`
-	ClienteID uint   `gorm:"column:cliente_id;not null" json:"cliente_id"`
+	ClienteID string `gorm:"column:cliente_id;not null" json:"cliente_id"`
 	Nombre    string `gorm:"size:100;not null" json:"nombre"`
 	Direccion string `gorm:"size:200;not null" json:"direccion"`
 	Comuna    string `gorm:"size:100;not null" json:"comuna"`
 	Ciudad    string `gorm:"size:100;not null" json:"ciudad"`
 
-	Cliente Cliente `gorm:"foreignKey:ClienteID;references:ID;constraint:OnDelete:CASCADE" json:"cliente"`
+	Cliente Cliente `gorm:"foreignKey:ClienteID;references:Rut;constraint:OnDelete:CASCADE" json:"cliente"`
 }
 
 func (DirCliente) TableName() string {
@@ -137,11 +136,11 @@ type Cotizacion struct {
 	FechaCrea    time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"fecha_crea"`
 	Estado       string    `gorm:"size:20;not null" json:"estado"`
 	CostoEnvio   float64   `gorm:"type:numeric(10,2);not null" json:"costo_envio"`
-	ClienteID    uint      `gorm:"column:cliente_id;not null" json:"cliente_id"`
+	RutCliente   string    `gorm:"column:rut_cliente;not null" json:"rut_cliente"`
 	UserID       string    `gorm:"size:100;column:user_id;not null" json:"user_id"`
 	TipoDespacho string    `gorm:"size:50;not null" json:"tipo_despacho"`
 
-	Cliente Cliente `gorm:"foreignKey:ClienteID;references:ID;constraint:OnDelete:CASCADE" json:"cliente"`
+	Cliente Cliente `gorm:"foreignKey:RutCliente;references:Rut;constraint:OnDelete:CASCADE" json:"cliente"`
 	Usuario Usuario `gorm:"foreignKey:UserID;references:Email;constraint:OnDelete:CASCADE" json:"usuario"`
 }
 

@@ -24,7 +24,7 @@ func GetDirClienteByID(db *gorm.DB, id uint) (*modelos.DirCliente, error) {
 }
 
 func CreateDirCliente(db *gorm.DB, nueva *modelos.DirCliente) error {
-	if nueva.ClienteID == 0 {
+	if nueva.ClienteID == "" {
 		return errors.New("el cliente es obligatorio")
 	}
 	if nueva.Direccion == "" {
@@ -39,7 +39,7 @@ func UpdateDirCliente(db *gorm.DB, id uint, actualizada *modelos.DirCliente) (*m
 		return nil, errors.New("dirección no encontrada")
 	}
 
-	if actualizada.ClienteID == 0 {
+	if actualizada.ClienteID == "" {
 		return nil, errors.New("el cliente es obligatorio")
 	}
 	if actualizada.Direccion == "" {
