@@ -6,6 +6,7 @@ import (
 	"os"
 
 	//	modelos "backend-inventario/api/Models"
+	"backend-inventario/config"
 	"backend-inventario/api/Routes"
 	"backend-inventario/api/db"
 	"backend-inventario/services"
@@ -17,6 +18,7 @@ import (
 )
 
 func main() {
+	config.LoadEnv()
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error al cargar archivo .env")
