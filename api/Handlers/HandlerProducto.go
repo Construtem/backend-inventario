@@ -13,7 +13,7 @@ func GetProductosHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		productos, err := Controllers.GetProductos(db)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener productos"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener productos", "details": err.Error()})
 			return
 		}
 		c.JSON(http.StatusOK, productos)
