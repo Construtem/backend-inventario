@@ -86,11 +86,11 @@ func GetDespachos(db *gorm.DB) ([]DespachoConTotales, error) {
 func GetDespachoByID(db *gorm.DB, id uint) (*DespachoConTotales, error) {
 	var despacho modelos.Despacho
 	err := db.
-		Preload("Cotizacion.Cliente").
-		Preload("Cotizacion").
-		Preload("Camion").
-		Preload("OrigenSucursal").
-		Preload("DestinoDirCliente").
+		Preload("Cotizacion.Cliente.Tipo").
+		Preload("Cotizacion.Usuario.Rol").
+		Preload("Camion.Tipo").
+		Preload("OrigenSucursal.Tipo").
+		Preload("DestinoDirCliente.Cliente.Tipo").
 		Preload("ProductosDespacho.Producto").
 		First(&despacho, "id = ?", id).Error
 	if err != nil {
