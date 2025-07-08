@@ -18,11 +18,8 @@ import (
 )
 
 func main() {
-	config.LoadEnv()
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error al cargar archivo .env")
-	}
+	   // En producción (Kubernetes), solo intenta cargar .env en local, pero nunca detengas la app si no existe
+    config.LoadEnv() // Esto ya maneja el log si no existe .env
 
 	database, err := db.ConectarDB()
 	if err != nil {
