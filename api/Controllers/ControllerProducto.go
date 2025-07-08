@@ -40,7 +40,7 @@ func UpdateProducto(db *gorm.DB, sku string, nuevo *modelos.Producto) (*modelos.
 	err := db.Model(&existente).Updates(modelos.Producto{
 		Nombre:      nuevo.Nombre,
 		Descripcion: nuevo.Descripcion,
-		Marca:       nuevo.Marca,
+		ProveedorID: nuevo.ProveedorID,
 		Peso:        nuevo.Peso,
 		Largo:       nuevo.Largo,
 		Ancho:       nuevo.Ancho,

@@ -9,7 +9,7 @@ import (
 
 func GetDirCliente(db *gorm.DB) ([]modelos.DirCliente, error) {
 	var direcciones []modelos.DirCliente
-	if err := db.Preload("Cliente").Find(&direcciones).Error; err != nil {
+	if err := db.Preload("Cliente.Tipo").Find(&direcciones).Error; err != nil {
 		return nil, err
 	}
 	return direcciones, nil
@@ -17,14 +17,14 @@ func GetDirCliente(db *gorm.DB) ([]modelos.DirCliente, error) {
 
 func GetDirClienteByID(db *gorm.DB, id uint) (*modelos.DirCliente, error) {
 	var direccion modelos.DirCliente
-	if err := db.Preload("Cliente").First(&direccion, "id = ?", id).Error; err != nil {
+	if err := db.Preload("Cliente.Tipo").First(&direccion, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return &direccion, nil
 }
 
 func CreateDirCliente(db *gorm.DB, nueva *modelos.DirCliente) error {
-	if nueva.ClienteID == "" {
+	if nueva.RutCliente == "" {
 		return errors.New("el cliente es obligatorio")
 	}
 	if nueva.Direccion == "" {
@@ -39,7 +39,7 @@ func UpdateDirCliente(db *gorm.DB, id uint, actualizada *modelos.DirCliente) (*m
 		return nil, errors.New("dirección no encontrada")
 	}
 
-	if actualizada.ClienteID == "" {
+	if actualizada.RutCliente == "" {
 		return nil, errors.New("el cliente es obligatorio")
 	}
 	if actualizada.Direccion == "" {
