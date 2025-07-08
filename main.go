@@ -8,6 +8,8 @@ import (
 	//	modelos "backend-inventario/api/Models"
 	"backend-inventario/api/Routes"
 	"backend-inventario/api/db"
+	"backend-inventario/services"
+	"backend-inventario/handlers"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -26,18 +28,21 @@ func main() {
 	}
 	fmt.Println("Conexión a la base de datos exitosa")
 
+	services.InitFirebase()
+
 	//	modelos.MigrarTablas(database)
 	//	fmt.Println("Migración de tablas exitosa")
 
 	router := gin.Default()
 
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"}, // Permite tu frontend de Next.js
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+		AllowOrigins:     []string{"https://inventario.tssw.cl"}, // Permite tu frontend de Next.js
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},	// Agregado el OPTIONS para autenticacion
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
-
+	router.POST("/auth/verify", handlers.VerifyToken)	//Ruta para autenticacion firebase
 	Routes.RegisterRoutes(router, database)
 
 	port := os.Getenv("PORT")
