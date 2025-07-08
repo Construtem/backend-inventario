@@ -6,12 +6,14 @@ type Producto struct {
 	SKU         string  `gorm:"primaryKey;size:20" json:"sku"`
 	Nombre      string  `gorm:"size:100;not null" json:"nombre"`
 	Descripcion string  `gorm:"type:text" json:"descripcion"`
-	Marca       string  `gorm:"size:30;not null" json:"marca"`
+	ProveedorID uint    `gorm:"primaryKey;column:proveedor_id" json:"proveedor_id"`
 	Peso        float64 `gorm:"type:numeric(10,2);not null" json:"peso"`
 	Largo       float64 `gorm:"type:numeric(10,2);not null" json:"largo"`
 	Ancho       float64 `gorm:"type:numeric(10,2);not null" json:"ancho"`
 	Alto        float64 `gorm:"type:numeric(10,2);not null" json:"alto"`
 	Precio      float64 `gorm:"type:numeric(10,2);not null" json:"precio"`
+
+	Proveedor Proveedor `gorm:"foreignKey:ProveedorID;references:ID;constraint:OnDelete:CASCADE" json:"proveedor"`
 }
 
 func (Producto) TableName() string {
@@ -117,14 +119,14 @@ type Cliente struct {
 }
 
 type DirCliente struct {
-	ID        uint   `gorm:"primaryKey" json:"id"`
-	ClienteID string `gorm:"column:cliente_id;not null" json:"cliente_id"`
-	Nombre    string `gorm:"size:100;not null" json:"nombre"`
-	Direccion string `gorm:"size:200;not null" json:"direccion"`
-	Comuna    string `gorm:"size:100;not null" json:"comuna"`
-	Ciudad    string `gorm:"size:100;not null" json:"ciudad"`
+	ID         uint   `gorm:"primaryKey" json:"id"`
+	RutCliente string `gorm:"column:rut_cliente;not null" json:"rut_cliente"`
+	Nombre     string `gorm:"size:100;not null" json:"nombre"`
+	Direccion  string `gorm:"size:200;not null" json:"direccion"`
+	Comuna     string `gorm:"size:100;not null" json:"comuna"`
+	Ciudad     string `gorm:"size:100;not null" json:"ciudad"`
 
-	Cliente Cliente `gorm:"foreignKey:ClienteID;references:Rut;constraint:OnDelete:CASCADE" json:"cliente"`
+	Cliente Cliente `gorm:"foreignKey:RutCliente;references:Rut;constraint:OnDelete:CASCADE" json:"cliente"`
 }
 
 func (DirCliente) TableName() string {
@@ -198,7 +200,7 @@ type Despacho struct {
 	Cotizacion        Cotizacion          `gorm:"foreignKey:CotizacionID;references:ID;constraint:OnDelete:CASCADE" json:"cotizacion"`
 	Camion            Camion              `gorm:"foreignKey:CamionID;references:ID;constraint:OnDelete:CASCADE" json:"camion"`
 	OrigenSucursal    Sucursal            `gorm:"foreignKey:Origen;references:ID;constraint:OnDelete:CASCADE" json:"origen_sucursal"`
-	DestinoDirCliente DirCliente          `gorm:"foreignKey:Destino;references:ID;constraint:OnDelete:CASCADE" json:"destino_dir_cliente"`
+	DestinoDirCliente DirCliente          `gorm:"foreignKey:Destino;references:RutCliente;constraint:OnDelete:CASCADE" json:"destino_dir_cliente"`
 	ProductosDespacho []ProductosDespacho `gorm:"foreignKey:DespachoID;references:ID;constraint:OnDelete:CASCADE" json:"productos"`
 }
 
