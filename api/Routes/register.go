@@ -1,6 +1,7 @@
 package Routes
 
 import (
+	"backend-inventario/api/Controllers"
 	"backend-inventario/api/Handlers"
 
 	"time"
@@ -58,6 +59,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB) {
 	api.POST("/despachos", Handlers.CreateDespachoHandler(db))
 	api.PUT("/despachos/:id", Handlers.UpdateDespachoHandler(db))
 	api.DELETE("/despachos/:id", Handlers.DeleteDespachoHandler(db))
+	api.GET("/despachos/:id/pdf", Controllers.GenerarDespachoPDF(db))
 
 	// Rutas para Tipos de Camion
 	api.GET("/tipos-camion", Handlers.GetTipoCamionHandler(db))
