@@ -4,11 +4,17 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/phpdave11/gofpdf"
 	"gorm.io/gorm"
 )
+
+// Función auxiliar para formatear fechas
+func formatDate(t time.Time) string {
+	return t.Format("02/01/2006")
+}
 
 // Handler para /api/despachos/:id/pdf
 func GenerarDespachoPDF(db *gorm.DB) gin.HandlerFunc {
@@ -27,28 +33,22 @@ func GenerarDespachoPDF(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		// Crear PDF
+		// Crear PDF con configuración profesional
 		pdf := gofpdf.New("P", "mm", "A4", "")
 		pdf.SetTitle("Guía de Despacho Electrónica", false)
+		pdf.SetAutoPageBreak(false, 0)
 		pdf.AddPage()
 
-		// Encabezado de la empresa
-		generarEncabezadoEmpresa(pdf)
+		// Configurar transformación UTF-8
+		tr := pdf.UnicodeTranslatorFromDescriptor("")
+		pdf.SetFont("Arial", "", 10)
 
-		// RUT y Guía de despacho electrónica en recuadro rojo
-		generarRecuadroRUT(pdf, strconv.Itoa(int(despacho.ID)))
-
-		// Información del destinatario y despacho
-		generarInfoDestinatario(pdf, despacho)
-
-		// Tabla de productos
-		generarTablaProductos(pdf, despacho)
-
-		// Totales
-		generarTotales(pdf, despacho)
-
-		// Pie de página con código de barras simulado
-		generarPiePagina(pdf)
+		// Generar el PDF con estructura profesional
+		err = generarPDFEstructurado(pdf, tr, despacho)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al generar PDF: " + err.Error()})
+			return
+		}
 
 		// PDF como stream
 		c.Header("Content-Type", "application/pdf")
@@ -60,225 +60,223 @@ func GenerarDespachoPDF(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
-func generarEncabezadoEmpresa(pdf *gofpdf.Fpdf) {
-	// Logo/Nombre de la empresa (lado izquierdo)
-	pdf.SetFont("Arial", "B", 14)
-	pdf.Cell(0, 8, "COMERCIAL FRANCISCO TOSO LTDA")
-	pdf.Ln(6)
-	
-	pdf.SetFont("Arial", "", 10)
-	pdf.Cell(0, 5, "Grandes Tiendas - Productos de Ferretería y para el")
-	pdf.Ln(4)
-	pdf.Cell(0, 5, "hogar")
-	pdf.Ln(4)
-	pdf.Cell(0, 5, "Matucana 90")
-	pdf.Ln(4)
-	pdf.Cell(0, 5, "Villa Alemana")
-	pdf.Ln(4)
-	pdf.Cell(0, 5, "Villa Alemana")
-	pdf.Ln(10)
-}
+func generarPDFEstructurado(pdf *gofpdf.Fpdf, tr func(string) string, despacho *DespachoConTotales) error {
+	// 1. Datos del Emisor y Título de Guía de Despacho
+	initialY := pdf.GetY()
 
-func generarRecuadroRUT(pdf *gofpdf.Fpdf, folioGuia string) {
-	// Posicionar en la esquina superior derecha
-	pdf.SetXY(130, 15)
-	
-	// Recuadro rojo para RUT y Guía
+	// --- Sección del Título y RUT (Recuadro Rojo a la Derecha) ---
 	pdf.SetDrawColor(255, 0, 0)
-	pdf.SetLineWidth(1.5)
-	pdf.Rect(130, 15, 65, 35, "D")
-	
-	// Contenido del recuadro
-	pdf.SetXY(135, 20)
-	pdf.SetFont("Arial", "B", 12)
-	pdf.SetTextColor(255, 0, 0)
-	pdf.Cell(0, 6, "R.U.T.: 76008058-6")
-	pdf.SetXY(135, 28)
-	pdf.Cell(0, 6, "Guía de despacho electrónica")
-	pdf.SetXY(135, 36)
-	pdf.Cell(0, 6, "Folio N°"+folioGuia)
-	
-	// Restaurar color de texto
+	pdf.SetFillColor(255, 255, 255)
 	pdf.SetTextColor(0, 0, 0)
+	pdf.SetLineWidth(0.5)
+
+	// Posición y dimensiones del recuadro rojo
+	rectRightX := 120.0
+	rectRightY := 10.0
+	rectRightWidth := 80.0
+	rectRightHeight := 30.0
+
+	pdf.Rect(rectRightX, rectRightY, rectRightWidth, rectRightHeight, "D")
+
+	// Contenido dentro del recuadro rojo
+	pdf.SetTextColor(255, 0, 0)
+
+	// R.U.T. centrado
+	pdf.SetFont("Arial", "B", 10)
+	pdf.SetXY(rectRightX+5, rectRightY+3)
+	pdf.CellFormat(rectRightWidth-10, 5, tr("R.U.T.: 76008058-6"), "", 0, "C", false, 0, "")
+
+	// "Guía de Despacho Electrónica" centrado
+	pdf.SetFont("Arial", "B", 12)
+	pdf.SetXY(rectRightX+5, rectRightY+10)
+	pdf.MultiCell(rectRightWidth-10, 5, tr("GUIA DE DESPACHO ELECTRONICA"), "", "C", false)
+
+	// N° folio centrado
+	pdf.SetFont("Arial", "B", 10)
+	pdf.SetXY(rectRightX+5, rectRightY+22)
+	pdf.CellFormat(rectRightWidth-10, 5, tr(fmt.Sprintf("Folio N° %d", despacho.ID)), "", 0, "C", false, 0, "")
+
+	// Restablecer color de dibujo a negro
+	pdf.SetDrawColor(0, 0, 0)
+
+	// --- Sección de Datos de la Empresa (A la Izquierda) ---
+	pdf.SetTextColor(0, 0, 0)
+	pdf.SetFont("Arial", "B", 14)
+	pdf.SetXY(15, initialY+5)
+	pdf.Cell(0, 6, tr("COMERCIAL FRANCISCO TOSO LTDA"))
+	pdf.Ln(6)
+
+	pdf.SetFont("Arial", "", 9)
+	pdf.SetX(15)
+	pdf.Cell(0, 4, tr("Grandes Tiendas - Productos de Ferretería y para el hogar"))
+	pdf.Ln(4)
+	pdf.SetX(15)
+	pdf.Cell(0, 4, tr("Dirección: Matucana 90, Villa Alemana"))
+	pdf.Ln(4)
+	pdf.SetX(15)
+	pdf.Cell(0, 4, tr("Email: contacto@franciscotoso.cl | Tel: +56 32 2345678"))
+	pdf.Ln(15)
+
+	// 2. Rectángulo naranja con información del despacho
+	currentY := pdf.GetY()
+	pdf.SetFillColor(255, 102, 0)
+	pdf.Rect(10, currentY, 190, 25, "F")
+
+	pdf.SetTextColor(255, 255, 255)
+	pdf.SetFont("Arial", "B", 10)
+
+	// Primera línea
+	pdf.SetXY(15, currentY+5)
+	pdf.Cell(0, 5, tr(fmt.Sprintf("N° Despacho: %d", despacho.ID)))
+
+	pdf.SetXY(110, currentY+5)
+	pdf.Cell(0, 5, tr(fmt.Sprintf("Fecha de Despacho: %s", formatDate(despacho.FechaDespacho))))
+
+	// Segunda línea
+	pdf.SetXY(15, currentY+15)
+	pdf.Cell(0, 5, tr(fmt.Sprintf("Cliente: %s", despacho.Cotizacion.Cliente.Nombre)))
+
+	pdf.SetXY(110, currentY+15)
+	pdf.Cell(0, 5, tr(fmt.Sprintf("RUT Cliente: %s", despacho.Cotizacion.Cliente.Rut)))
+
+	// Posicionar después del rectángulo
+	pdf.SetY(currentY + 30)
+	pdf.SetTextColor(0, 0, 0)
+	pdf.SetFont("Arial", "B", 12)
+	pdf.Ln(5)
+
+	// 3. Información adicional del despacho
+	pdf.SetFont("Arial", "", 9)
+	pdf.SetX(15)
+	pdf.Cell(0, 4, tr(fmt.Sprintf("Origen: %s", despacho.OrigenSucursal.Nombre)))
+	pdf.Ln(4)
+	pdf.SetX(15)
+	pdf.Cell(0, 4, tr(fmt.Sprintf("Destino: %s, %s, %s", despacho.DestinoDirCliente.Direccion, despacho.DestinoDirCliente.Comuna, despacho.DestinoDirCliente.Ciudad)))
+	pdf.Ln(4)
+	pdf.SetX(15)
+	pdf.Cell(0, 4, tr(fmt.Sprintf("Camión: %s", despacho.Camion.Patente)))
+	pdf.Ln(4)
+	pdf.SetX(15)
+	pdf.Cell(0, 4, tr(fmt.Sprintf("Estado: %s", despacho.Cotizacion.Estado)))
+	pdf.Ln(10)
+
+	// 4. Línea separadora superior
+	pdf.SetLineWidth(0.6)
+	pdf.Line(10, pdf.GetY(), 200, pdf.GetY())
+	pdf.SetLineWidth(0.2)
+	pdf.Ln(5)
+
+	pdf.SetFont("Arial", "B", 12)
+	pdf.CellFormat(0, 8, tr("DETALLES DEL DESPACHO"), "", 1, "C", false, 0, "")
+	pdf.Ln(5)
+
+	// Línea separadora inferior
+	pdf.SetLineWidth(0.6)
+	pdf.Line(10, pdf.GetY(), 200, pdf.GetY())
+	pdf.SetLineWidth(0.2)
+	pdf.Ln(5)
+
+	// 5. Encabezados de la tabla
+	pdf.SetFont("Arial", "B", 9)
+	pdf.SetFillColor(240, 240, 240)
+	pdf.SetTextColor(0, 0, 0)
+
+	pdf.CellFormat(30, 8, tr("Código"), "1", 0, "C", true, 0, "")
+	pdf.CellFormat(70, 8, tr("Descripción"), "1", 0, "C", true, 0, "")
+	pdf.CellFormat(20, 8, tr("Cantidad"), "1", 0, "C", true, 0, "")
+	pdf.CellFormat(35, 8, tr("Peso Unit (kg)"), "1", 0, "C", true, 0, "")
+	pdf.CellFormat(35, 8, tr("Peso Total (kg)"), "1", 1, "C", true, 0, "")
+
+	// 6. Filas de datos
+	pdf.SetFont("Arial", "", 9)
+	pdf.SetFillColor(255, 255, 255)
+
+	for _, item := range despacho.ProductosDespacho {
+		pesoTotal := float64(item.Cantidad) * item.Producto.Peso
+		pdf.CellFormat(30, 8, tr(item.Producto.SKU), "1", 0, "C", false, 0, "")
+		pdf.CellFormat(70, 8, tr(item.Producto.Nombre), "1", 0, "L", false, 0, "")
+		pdf.CellFormat(20, 8, fmt.Sprintf("%d", item.Cantidad), "1", 0, "C", false, 0, "")
+		pdf.CellFormat(35, 8, fmt.Sprintf("%.2f", item.Producto.Peso), "1", 0, "R", false, 0, "")
+		pdf.CellFormat(35, 8, fmt.Sprintf("%.2f", pesoTotal), "1", 1, "R", false, 0, "")
+	}
+
+	// 7. Línea bajo la tabla
+	pdf.Ln(5)
+	pdf.SetLineWidth(0.6)
+	pdf.Line(10, pdf.GetY(), 200, pdf.GetY())
+	pdf.SetLineWidth(0.2)
+	pdf.Ln(5)
+
+	// 8. Totales en recuadro
+	pdf.Ln(5)
+	pdf.SetFont("Arial", "", 10)
+
+	// Posición para los totales
+	startTotalsY := pdf.GetY()
+	rectX := 130.0
+	rectWidth := 70.0
+	numRows := 2
+	rowHeight := 7.0
+	rectHeight := float64(numRows) * rowHeight
+
+	// Dibujar recuadro de totales
 	pdf.SetDrawColor(0, 0, 0)
 	pdf.SetLineWidth(0.2)
-	
-	pdf.SetXY(180, 52)
-	pdf.SetFont("Arial", "", 8)
-	pdf.Cell(0, 4, "UNIDAD S.I.L.")
-	pdf.Ln(15)
-}
+	pdf.Rect(rectX, startTotalsY, rectWidth, rectHeight, "D")
 
-func generarInfoDestinatario(pdf *gofpdf.Fpdf, despacho *DespachoConTotales) {
-	// Recuadro para información del destinatario
-	pdf.SetXY(10, 65)
-	pdf.Rect(10, 65, 190, 20, "D")
-	
-	// Contenido del recuadro
-	pdf.SetXY(15, 70)
-	pdf.SetFont("Arial", "", 9)
-	
-	// Primera línea
-	pdf.Cell(30, 4, "Fecha:")
-	pdf.Cell(40, 4, despacho.FechaDespacho.Format("2006-01-02"))
-	pdf.Cell(30, 4, "Señor(es):")
-	pdf.Cell(40, 4, despacho.Cotizacion.Cliente.Nombre)
-	pdf.Ln(5)
-	
-	// Segunda línea  
-	pdf.SetX(15)
-	pdf.Cell(30, 4, "Giro:")
-	pdf.Cell(40, 4, "COMERCIO AL POR MENOR") // Campo genérico o agregar a modelo Cliente
-	pdf.Cell(30, 4, "Ciudad:")
-	pdf.Cell(30, 4, despacho.DestinoDirCliente.Ciudad)
-	pdf.Cell(20, 4, "R.U.T.:")
-	pdf.Cell(25, 4, despacho.Cotizacion.Cliente.Rut)
-	pdf.Ln(5)
-	
-	// Tercera línea
-	pdf.SetX(15)
-	pdf.Cell(30, 4, "Comuna:")
-	pdf.Cell(40, 4, despacho.DestinoDirCliente.Comuna)
-	pdf.Cell(30, 4, "Dirección:")
-	pdf.Cell(70, 4, despacho.DestinoDirCliente.Direccion)
-	pdf.Cell(20, 4, "Forma de pago:")
-	pdf.Ln(10)
-}
+	pdf.SetY(startTotalsY)
 
-func generarTablaProductos(pdf *gofpdf.Fpdf, despacho *DespachoConTotales) {
-	// Encabezados de la tabla de referencia
-	pdf.SetXY(10, 95)
-	pdf.Rect(10, 95, 190, 12, "D") // Recuadro para encabezados
-	
-	pdf.SetFont("Arial", "B", 9)
-	pdf.SetXY(15, 98)
-	pdf.Cell(20, 6, "Tipo documento")
-	pdf.Cell(30, 6, "Motivo referencia")
-	pdf.Cell(20, 6, "Folio")
-	pdf.Cell(20, 6, "Fecha")
-	pdf.Ln(8)
-	
-	pdf.SetXY(15, 106)
-	pdf.Cell(30, 6, "Cotización")
-	pdf.Cell(50, 6, "Venta")
-	pdf.Cell(20, 6, fmt.Sprintf("%d", despacho.CotizacionID))
-	pdf.Cell(20, 6, despacho.Cotizacion.FechaCrea.Format("2006-01-02"))
-	pdf.Ln(10)
-	
-	// Tabla de productos
-	pdf.SetXY(10, 120)
-	pdf.Rect(10, 120, 190, 12, "D") // Encabezado productos
-	
-	pdf.SetFont("Arial", "B", 9)
-	pdf.SetXY(15, 123)
-	pdf.Cell(20, 6, "CODIGO")
-	pdf.Cell(70, 6, "DESCRIPCION")
-	pdf.Cell(15, 6, "CANT.")
-	pdf.Cell(25, 6, "P.UNITARIO")
-	pdf.Cell(20, 6, "RECARGO")
-	pdf.Cell(20, 6, "DESCUENTO")
-	pdf.Cell(20, 6, "TOTAL")
-	pdf.Ln(8)
-	
-	// Productos reales del despacho
-	pdf.SetFont("Arial", "", 8)
-	y := 135
-	var subtotal float64
-	
-	for _, productoDespacho := range despacho.ProductosDespacho {
-		pdf.SetXY(15, float64(y))
-		pdf.Cell(20, 5, productoDespacho.Producto.SKU)
-		pdf.Cell(70, 5, productoDespacho.Producto.Nombre)
-		pdf.Cell(15, 5, fmt.Sprintf("%d", productoDespacho.Cantidad))
-		pdf.Cell(25, 5, fmt.Sprintf("%.0f", productoDespacho.Producto.Precio))
-		pdf.Cell(20, 5, "-") // recargo
-		pdf.Cell(20, 5, "-") // descuento
-		
-		totalLinea := float64(productoDespacho.Cantidad) * productoDespacho.Producto.Precio
-		subtotal += totalLinea
-		pdf.Cell(20, 5, fmt.Sprintf("%.0f", totalLinea))
-		y += 8
-		
-		if y > 200 { // Si se acaba el espacio, agregar nueva página
-			break
-		}
-	}
-	
-	// Guardar subtotal para usar en totales
-	pdf.SetXY(15, float64(y+5))
-	pdf.SetFont("Arial", "I", 8)
-	pdf.Cell(0, 4, fmt.Sprintf("Total de productos: %d | Peso total: %.2f kg", 
-		despacho.CantidadItems, despacho.TotalKg))
-}
+	// Total Items
+	pdf.SetX(rectX)
+	pdf.CellFormat(45, rowHeight, "Total Items:", "", 0, "L", false, 0, "")
+	pdf.CellFormat(20, rowHeight, fmt.Sprintf("%d", despacho.CantidadItems), "", 1, "R", false, 0, "")
 
-func generarTotales(pdf *gofpdf.Fpdf, despacho *DespachoConTotales) {
-	// Calcular totales basados en productos reales
-	var subtotal float64
-	for _, producto := range despacho.ProductosDespacho {
-		subtotal += float64(producto.Cantidad) * producto.Producto.Precio
-	}
-	
-	iva := subtotal * 0.19
-	total := subtotal + iva
-	
-	// Totales en la parte inferior derecha
-	pdf.SetXY(150, 200)
-	pdf.SetFont("Arial", "", 10)
-	
-	pdf.Cell(20, 6, "Neto")
-	pdf.Cell(20, 6, fmt.Sprintf("%.0f", subtotal))
-	pdf.Ln(5)
-	
-	pdf.SetX(150)
-	pdf.Cell(20, 6, "IVA (19%)")
-	pdf.Cell(20, 6, fmt.Sprintf("%.0f", iva))
-	pdf.Ln(5)
-	
-	pdf.SetX(150)
+	// Total Peso
+	pdf.SetX(rectX)
 	pdf.SetFont("Arial", "B", 10)
-	pdf.Cell(20, 6, "Total")
-	pdf.Cell(20, 6, fmt.Sprintf("%.0f", total))
+	pdf.CellFormat(45, rowHeight, "Total Peso (kg):", "", 0, "L", false, 0, "")
+	pdf.CellFormat(20, rowHeight, fmt.Sprintf("%.2f", despacho.TotalKg), "", 1, "R", false, 0, "")
+
+	pdf.Ln(20)
+
+	// 9. Mensaje final
+	pdf.SetFont("Arial", "", 10)
+	pdf.CellFormat(0, 5, "Gracias por confiar en nosotros", "", 1, "C", false, 0, "")
+	pdf.Ln(10)
+
+	// 10. Pie de página
+	generarPieDespacho(pdf, tr, despacho)
+
+	return nil
 }
 
-func generarPiePagina(pdf *gofpdf.Fpdf) {
-	// Información adicional en la parte inferior
-	pdf.SetXY(10, 230)
+func generarPieDespacho(pdf *gofpdf.Fpdf, tr func(string) string, despacho *DespachoConTotales) {
+	pageWidth, pageHeight := pdf.GetPageSize()
+
+	// Rectángulo naranja para pie de página
+	pdf.SetFillColor(255, 102, 0)
+	pdf.Rect(0, pageHeight-35, pageWidth, 35, "F")
+
+	// Texto dentro del rectángulo naranja
+	pdf.SetTextColor(255, 255, 255)
+
+	// Frase legal
+	pdf.SetFont("Arial", "I", 7)
+	pdf.SetXY(10, pageHeight-30)
+	pdf.MultiCell(pageWidth-20, 3, tr("Esta guía de despacho es representación fiel del documento electrónico firmado digitalmente según ley N° 19.799"), "", "C", false)
+
+	// S.I.I. - Santiago
+	pdf.SetXY(10, pageHeight-22)
 	pdf.SetFont("Arial", "", 8)
-	
-	// Simulación de código de barras
-	pdf.Rect(25, 230, 50, 20, "D")
-	pdf.SetXY(30, 235)
-	for i := 0; i < 45; i++ {
-		pdf.Line(30+float64(i), 235, 30+float64(i), 245)
-	}
-	
-	// Texto del pie
-	pdf.SetXY(85, 235)
-	pdf.Cell(0, 4, "Timbre electrónico SII")
-	pdf.Ln(3)
-	pdf.SetX(85)
-	pdf.Cell(0, 4, "Resolución 0 del 2021 - Verifique su documento en: www.sii.cl")
-	
-	// Información adicional del lado derecho
-	pdf.SetXY(130, 230)
-	pdf.Cell(20, 4, "R.U.T.:")
-	pdf.Ln(3)
-	pdf.SetX(130)
-	pdf.Cell(20, 4, "NOMBRE:")
-	pdf.Ln(3)
-	pdf.SetX(130)
-	pdf.Cell(20, 4, "FECHA:")
-	pdf.Cell(30, 4, "RECINTO:")
-	pdf.Ln(8)
-	pdf.SetX(130)
-	pdf.Cell(20, 4, "FIRMA:")
-	
-	// Texto legal en la parte inferior
-	pdf.SetXY(10, 255)
+	pdf.CellFormat(0, 4, "S.I.I. - Santiago", "", 1, "C", false, 0, "")
+
+	// Información adicional
+	pdf.SetXY(10, pageHeight-15)
 	pdf.SetFont("Arial", "", 7)
-	pdf.Cell(0, 3, "\"El acuse de recibo que se declara en este acto, de acuerdo a lo dispuesto en la letra")
-	pdf.Ln(3)
-	pdf.Cell(0, 3, "b) del artículo 4°, y la letra c) del artículo 5° de la ley 19.983, acredita que la entrega de")
-	pdf.Ln(3)
-	pdf.Cell(0, 3, "mercaderías o servicios) prestado(s) ha(n) sido recibido(s)\"")
+	pdf.CellFormat(0, 4, "Timbre electrónico - Resolución 0 del 2021", "", 1, "C", false, 0, "")
+
+	// Número de despacho en la esquina derecha
+	pdf.SetXY(pageWidth-40, pageHeight-12)
+	pdf.SetFont("Arial", "B", 8)
+	pdf.Cell(0, 5, fmt.Sprintf("Despacho N° %d", despacho.ID))
 }
