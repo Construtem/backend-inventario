@@ -3,6 +3,7 @@ package Controllers
 import (
 	modelos "backend-inventario/api/Models"
 	"errors"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -32,16 +33,21 @@ func GetStockProveedorByID(db *gorm.DB, proveedorID uint, productoID string) (*m
 }
 
 func CreateStockProveedor(db *gorm.DB, stock *modelos.StockProveedor) error {
+	if stock.FechaIngreso.IsZero() {
+		stock.FechaIngreso = time.Now()
+	}
 	return db.Create(stock).Error
 }
 
-func UpdateStockProveedor(db *gorm.DB, proveedorID uint, productoID string, cantidad int) error {
+func UpdateStockProveedor(db *gorm.DB, proveedorID uint, productoID string, actualizado modelos.StockProveedor) error {
 	var stock modelos.StockProveedor
 	if err := db.First(&stock, "proveedor_id = ? AND producto_id = ?", proveedorID, productoID).Error; err != nil {
 		return errors.New("stock proveedor no encontrado")
 	}
 
-	stock.Stock = cantidad
+	stock.Stock = actualizado.Stock
+	stock.FechaIngreso = actualizado.FechaIngreso
+
 	return db.Save(&stock).Error
 }
 

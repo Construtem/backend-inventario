@@ -58,7 +58,7 @@ func UpdateStockProveedorHandler(db *gorm.DB) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos", "details": err.Error()})
 			return
 		}
-		if err := Controllers.UpdateStockProveedor(db, uint(proveedorID), productoID, stock.Stock); err != nil {
+		if err := Controllers.UpdateStockProveedor(db, uint(proveedorID), productoID, stock); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al actualizar stock de proveedor", "details": err.Error()})
 			return
 		}

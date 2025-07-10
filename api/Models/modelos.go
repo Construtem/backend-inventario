@@ -21,8 +21,11 @@ func (Producto) TableName() string {
 }
 
 type Proveedor struct {
-	ID    uint   `gorm:"primaryKey" json:"id"`
-	Marca string `gorm:"size:30;not null" json:"marca"`
+	ID        uint   `gorm:"primaryKey" json:"id"`
+	Marca     string `gorm:"size:30;not null" json:"marca"`
+	Email     string `gorm:"size:100;not null;unique" json:"email"`
+	Telefono  string `gorm:"size:20;not null" json:"telefono"`
+	Direccion string `gorm:"size:200;not null" json:"direccion"`
 }
 
 func (Proveedor) TableName() string {
@@ -30,9 +33,10 @@ func (Proveedor) TableName() string {
 }
 
 type StockProveedor struct {
-	ProveedorID uint   `gorm:"primaryKey;column:proveedor_id" json:"proveedor_id"`
-	ProductoID  string `gorm:"primaryKey;size:20;column:producto_id" json:"producto_id"`
-	Stock       int    `gorm:"not null" json:"stock"`
+	ProveedorID  uint      `gorm:"primaryKey;column:proveedor_id" json:"proveedor_id"`
+	ProductoID   string    `gorm:"primaryKey;size:20;column:producto_id" json:"producto_id"`
+	Stock        int       `gorm:"not null" json:"stock"`
+	FechaIngreso time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"fecha_ingreso"`
 
 	Proveedor Proveedor `gorm:"foreignKey:ProveedorID;references:ID;constraint:OnDelete:CASCADE" json:"proveedor"`
 	Producto  Producto  `gorm:"foreignKey:ProductoID;references:SKU;constraint:OnDelete:CASCADE" json:"producto"`
