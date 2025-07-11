@@ -21,7 +21,7 @@ func ConectarDB() (*gorm.DB, error) {
 		log.Fatal("Faltan variables de entorno para la conexión a la base de datos")
 	}
 
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=America/Santiago", host, port, user, password, dbname)
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
 
 	gormLogger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags),
