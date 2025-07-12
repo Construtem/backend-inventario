@@ -6,21 +6,20 @@ import (
 	"os"
 
 	//	modelos "backend-inventario/api/Models"
+	"backend-inventario/config"
 	"backend-inventario/api/Routes"
 	"backend-inventario/api/db"
 	"backend-inventario/services"
 	"backend-inventario/handlers"
 
+	_ "github.com/joho/godotenv/autoload" // Carga automáticamente el archivo .env
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error al cargar archivo .env")
-	}
+	   // En producción (Kubernetes), solo intenta cargar .env en local, pero nunca detengas la app si no existe
+    config.LoadEnv() // Esto ya maneja el log si no existe .env
 
 	database, err := db.ConectarDB()
 	if err != nil {
@@ -35,12 +34,17 @@ func main() {
 
 	router := gin.Default()
 
+	// Configurando CORS
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"https://inventario.tssw.cl"}, // Permite tu frontend de Next.js
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},	// Agregado el OPTIONS para autenticacion
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
+	    AllowOrigins: []string{	// Lista de URLs permitidas para CORS
+	        os.Getenv("FRONT_VENTAS_URL"),	// URL del frontend de ventas
+	        os.Getenv("FRONT_INVENTARIO_URL"), 	// URL del frontend de inventario
+	        os.Getenv("FRONT_FACTURACION_URL"), // URL del frontend de facturación
+	    },
+	    AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+	    AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+	    ExposeHeaders:    []string{"Content-Length"},
+	    AllowCredentials: true,
 	}))
 	router.POST("/auth/verify", handlers.VerifyToken)	//Ruta para autenticacion firebase
 	Routes.RegisterRoutes(router, database)

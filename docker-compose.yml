@@ -11,7 +11,7 @@ services:
     # Mapea los puertos del contenedor al host.
     # '8080:8080' significa que el puerto 8080 del host se mapea al puerto 8080 del contenedor.
     ports:
-      - "8081:8080"
+      - "8080:8080"
     
     # Asigna un nombre específico al contenedor para facilitar identificación
     container_name: back-inventario
