@@ -9,7 +9,6 @@ import (
 )
 
 func RegisterRoutes(router *gin.Engine, db *gorm.DB) {
-
 	// Grupo de rutas para la API
 	api := router.Group("/api")
 
