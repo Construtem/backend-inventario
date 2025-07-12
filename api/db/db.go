@@ -26,7 +26,7 @@ func ConectarDB() (*gorm.DB, error) {
 	gormLogger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags),
 		logger.Config{
-			LogLevel: logger.Silent,
+			LogLevel: logger.Info,
 			Colorful: true,
 		},
 	)

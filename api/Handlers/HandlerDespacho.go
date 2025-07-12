@@ -36,7 +36,11 @@ func GetDespachosHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		despachos, err := Controllers.GetDespachos(db)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener despachos", "details": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "Error al obtener despachos",
+				"details": err.Error(),
+				"message": "Error interno del servidor al consultar despachos",
+			})
 			return
 		}
 		c.JSON(http.StatusOK, despachos)
