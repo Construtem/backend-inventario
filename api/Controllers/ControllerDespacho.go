@@ -3,16 +3,26 @@ package Controllers
 import (
 	modelos "backend-inventario/api/Models"
 	"errors"
+	"fmt"
 	"time"
 
 	"gorm.io/gorm"
 )
 
+// DespachoConTotales es una estructura que incluye un despacho y sus totales calculados
 type DespachoConTotales struct {
 	modelos.Despacho
 	CantidadItems     int                         `json:"cantidad_items"`
 	TotalKg           float64                     `json:"total_kg"`
 	ProductosDespacho []modelos.ProductosDespacho `json:"items"`
+}
+
+// Se define una estructura interna para manejar cada unidad de producto
+type Unidad struct {
+	SKU        string
+	Peso       float64
+	Volumen    float64
+	SucursalID uint
 }
 
 func CreateDespacho(db *gorm.DB, despacho *modelos.Despacho, productos []modelos.ProductosDespacho) error {
@@ -145,19 +155,14 @@ func CalcularDespacho(db *gorm.DB, cotID uint) ([]modelos.Despacho, error) {
 		return nil, errors.New("no hay productos en la cotización")
 	}
 
-	// 🚚 Se obtiene el tipo de camión con ID 1 (esto puede mejorarse a futuro para soportar múltiples tipos)
-	var tipo modelos.TipoCamion
-	if err := db.First(&tipo, 1).Error; err != nil {
+	var tiposDisponibles []modelos.TipoCamion
+	if err := db.Order("peso_maximo ASC").Find(&tiposDisponibles).Error; err != nil {
 		return nil, err
 	}
-
-	// 🧱 Se define una estructura interna para manejar cada unidad de producto
-	type Unidad struct {
-		SKU        string
-		Peso       float64
-		Volumen    float64
-		SucursalID uint
+	if len(tiposDisponibles) == 0 {
+		return nil, errors.New("no hay tipos de camión disponibles")
 	}
+
 	var unidades []Unidad
 
 	// 🧮 Se desglosan los ítems en unidades individuales (uno por cantidad), calculando su volumen
@@ -185,15 +190,26 @@ func CalcularDespacho(db *gorm.DB, cotID uint) ([]modelos.Despacho, error) {
 	var pesoActual, volumenActual float64
 
 	for _, u := range unidades {
-		if pesoActual+u.Peso > tipo.PesoMaximo || volumenActual+u.Volumen > tipo.Volumen {
-			grupos = append(grupos, actuales) // se cierra el grupo actual
-			actuales = []Unidad{}             // se empieza un nuevo grupo
-			pesoActual = 0
-			volumenActual = 0
-		}
 		actuales = append(actuales, u)
 		pesoActual += u.Peso
 		volumenActual += u.Volumen
+
+		cabe := false
+		for _, tipo := range tiposDisponibles {
+			if tipo.PesoMaximo >= pesoActual && tipo.Volumen >= volumenActual {
+				cabe = true
+				break
+			}
+		}
+
+		if !cabe {
+			grupoValido := actuales[:len(actuales)-1] // se quita la última unidad que no cabe
+			grupos = append(grupos, grupoValido)
+
+			actuales = []Unidad{u} // reiniciar el grupo con la unidad actual
+			pesoActual = u.Peso
+			volumenActual = u.Volumen
+		}
 	}
 	if len(actuales) > 0 {
 		grupos = append(grupos, actuales) // se agrega el último grupo
@@ -203,9 +219,26 @@ func CalcularDespacho(db *gorm.DB, cotID uint) ([]modelos.Despacho, error) {
 
 	// 🚛 Por cada grupo de unidades, se crea un despacho nuevo
 	for _, grupo := range grupos {
+		var tipoCamionID uint = 0
+		for _, tipo := range tiposDisponibles {
+			if tipo.PesoMaximo >= pesoTotal(grupo) && tipo.Volumen >= volumenTotal(grupo) {
+				tipoCamionID = tipo.ID
+				break
+			}
+		}
+		if tipoCamionID == 0 {
+			return nil, errors.New("no hay tipo de camión disponible para un grupo de productos")
+		}
+
+		var camion modelos.Camion
+		if err := db.Where("tipo_id = ? AND activo = true", tipoCamionID).First(&camion).Error; err != nil {
+			return nil, fmt.Errorf("no hay camiones disponibles del tipo %d", tipoCamionID)
+		}
+
+		// Crear el despacho con la información del grupo
 		despacho := modelos.Despacho{
 			CotizacionID:  cotID,
-			CamionID:      1,
+			CamionID:      camion.ID,
 			Origen:        grupo[0].SucursalID,
 			Destino:       destino.ID,
 			FechaDespacho: time.Now().AddDate(0, 0, 1), // Fecha de despacho al día siguiente
@@ -270,4 +303,21 @@ func AprobarDespacho(db *gorm.DB, cotID uint) error {
 		return errors.New("no se encontró despacho para la cotización especificada")
 	}
 	return result.Error
+}
+
+// Funciones auxiliares
+func pesoTotal(grupo []Unidad) float64 {
+	var total float64
+	for _, u := range grupo {
+		total += u.Peso
+	}
+	return total
+}
+
+func volumenTotal(grupo []Unidad) float64 {
+	var total float64
+	for _, u := range grupo {
+		total += u.Volumen
+	}
+	return total
 }
