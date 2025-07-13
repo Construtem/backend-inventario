@@ -100,3 +100,63 @@ func DeleteDespachoHandler(db *gorm.DB) gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{"message": "Despacho eliminado exitosamente"})
 	}
 }
+
+func CalcularDespachoHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		type Req struct {
+			CotizacionID uint `json:"cotizacion_id"`
+		}
+
+		var req Req
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Solicitud inválida", "details": err.Error()})
+			return
+		}
+
+		despacho, err := Controllers.CalcularDespacho(db, req.CotizacionID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al calcular despacho", "details": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, despacho)
+	}
+}
+
+func GetDespachosPorCotizacionHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		idStr := c.Param("id")
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+			return
+		}
+
+		despachos, err := Controllers.GetDespachosPorCotizacion(db, uint(id))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener despachos", "details": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, despachos)
+	}
+}
+
+func AprobarDespachoHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req struct {
+			CotizacionID uint `json:"cotizacion_id"`
+		}
+
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Solicitud inválida", "details": err.Error()})
+			return
+		}
+
+		if err := Controllers.AprobarDespacho(db, req.CotizacionID); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al aprobar despacho", "details": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Despacho aprobado exitosamente"})
+	}
+}
