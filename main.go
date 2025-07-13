@@ -37,8 +37,8 @@ func main() {
 	// Configurando CORS
 	router.Use(cors.New(cors.Config{
 		AllowOrigins: []string{
-			"http://localhost:3000", // Frontend de desarrollo
-			"http://localhost:3001", // Backup frontend
+			"http://localhost:3001", // Frontend de desarrollo
+			"http://localhost:3002", // Backup frontend
 			"http://localhost:8080", // Otro puerto común
 		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -51,7 +51,7 @@ func main() {
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8081" // Puerto alternativo
+		port = "8080" // Puerto alternativo
 	}
 
 	if err := router.Run(":" + port); err != nil {

@@ -22,6 +22,18 @@ func GetProductosDespachoHandler(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
+// GetProductosDespachoDetalladoHandler obtiene todos los productos de despacho con información detallada
+func GetProductosDespachoDetalladoHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		productosDespacho, err := Controllers.GetProductosDespachoDetallado(db)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener productos de despacho detallados: " + err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, productosDespacho)
+	}
+}
+
 // GetProductosDespachoByDespachoIDHandler obtiene todos los productos de un despacho específico
 func GetProductosDespachoByDespachoIDHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -35,6 +47,25 @@ func GetProductosDespachoByDespachoIDHandler(db *gorm.DB) gin.HandlerFunc {
 		productosDespacho, err := Controllers.GetProductosDespachoByDespachoID(db, uint(despachoID))
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener productos del despacho: " + err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, productosDespacho)
+	}
+}
+
+// GetProductosDespachoDetalladoByDespachoIDHandler obtiene productos de un despacho con información detallada
+func GetProductosDespachoDetalladoByDespachoIDHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		despachoIDStr := c.Param("despacho_id")
+		despachoID, err := strconv.ParseUint(despachoIDStr, 10, 32)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ID de despacho inválido"})
+			return
+		}
+
+		productosDespacho, err := Controllers.GetProductosDespachoDetalladoByDespachoID(db, uint(despachoID))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener productos detallados del despacho: " + err.Error()})
 			return
 		}
 		c.JSON(http.StatusOK, productosDespacho)
