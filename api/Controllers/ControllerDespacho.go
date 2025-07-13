@@ -34,14 +34,14 @@ func CreateDespacho(db *gorm.DB, despacho *modelos.Despacho, productos []modelos
 			}
 
 			res := tx.Model(&modelos.StockSucursal{}).
-				Where("producto_id = ? AND sucursal_id = ?", p.ProductoID, despacho.Origen).
+				Where("sku = ? AND sucursal_id = ?", p.SKU, despacho.Origen).
 				Update("cantidad", gorm.Expr("cantidad - ?", p.Cantidad))
 
 			if res.Error != nil {
 				return res.Error
 			}
 			if res.RowsAffected == 0 {
-				return errors.New("no se encontró stock suficiente para el producto " + p.ProductoID)
+				return errors.New("no se encontró stock suficiente para el producto " + p.SKU)
 			}
 		}
 		return nil

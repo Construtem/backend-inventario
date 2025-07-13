@@ -24,8 +24,8 @@ func GetStockProveedorHandler(db *gorm.DB) gin.HandlerFunc {
 func GetStockProveedorByIDHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		proveedorID, _ := strconv.Atoi(c.Param("proveedor_id"))
-		productoID := c.Param("producto_id")
-		stock, err := Controllers.GetStockProveedorByID(db, uint(proveedorID), productoID)
+		sku := c.Param("sku")
+		stock, err := Controllers.GetStockProveedorByID(db, uint(proveedorID), sku)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Stock no encontrado"})
 			return
@@ -52,13 +52,13 @@ func CreateStockProveedorHandler(db *gorm.DB) gin.HandlerFunc {
 func UpdateStockProveedorHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		proveedorID, _ := strconv.Atoi(c.Param("proveedor_id"))
-		productoID := c.Param("producto_id")
+		sku := c.Param("sku")
 		var stock modelos.StockProveedor
 		if err := c.ShouldBindJSON(&stock); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos", "details": err.Error()})
 			return
 		}
-		if err := Controllers.UpdateStockProveedor(db, uint(proveedorID), productoID, stock); err != nil {
+		if err := Controllers.UpdateStockProveedor(db, uint(proveedorID), sku, stock); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al actualizar stock de proveedor", "details": err.Error()})
 			return
 		}
@@ -69,8 +69,8 @@ func UpdateStockProveedorHandler(db *gorm.DB) gin.HandlerFunc {
 func DeleteStockProveedorHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		proveedorID, _ := strconv.Atoi(c.Param("proveedor_id"))
-		productoID := c.Param("producto_id")
-		if err := Controllers.DeleteStockProveedor(db, uint(proveedorID), productoID); err != nil {
+		sku := c.Param("sku")
+		if err := Controllers.DeleteStockProveedor(db, uint(proveedorID), sku); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al eliminar stock de proveedor", "details": err.Error()})
 			return
 		}

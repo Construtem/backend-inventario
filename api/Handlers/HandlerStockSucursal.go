@@ -23,7 +23,7 @@ func GetStockSucursalHandler(db *gorm.DB) gin.HandlerFunc {
 
 func GetStockSucursalByIDHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		sku := c.Param("producto_id")
+		sku := c.Param("sku")
 		sucursalIDStr := c.Param("sucursal_id")
 		sucursalID, err := strconv.ParseUint(sucursalIDStr, 10, 64)
 		if err != nil {
@@ -57,7 +57,7 @@ func CreateStockSucursalHandler(db *gorm.DB) gin.HandlerFunc {
 
 func UpdateStockSucursalHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		sku := c.Param("producto_id")
+		sku := c.Param("sku")
 		sucursalIDStr := c.Param("sucursal_id")
 		sucursalID, err := strconv.ParseUint(sucursalIDStr, 10, 64)
 		if err != nil {

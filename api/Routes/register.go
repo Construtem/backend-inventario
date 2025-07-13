@@ -28,10 +28,10 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB) {
 
 	// Rutas para Stock por Sucursal
 	api.GET("/stock-sucursal", Handlers.GetStockSucursalHandler(db))
-	api.GET("/stock-sucursal/:sucursal_id/:producto_id", Handlers.GetStockSucursalByIDHandler(db))
+	api.GET("/stock-sucursal/:sucursal_id/:sku", Handlers.GetStockSucursalByIDHandler(db))
 	api.POST("/stock-sucursal", Handlers.CreateStockSucursalHandler(db))
-	api.PUT("/stock-sucursal/:sucursal_id/:producto_id", Handlers.UpdateStockSucursalHandler(db))
-	api.DELETE("/stock-sucursal/:sucursal_id/:producto_id", Handlers.DeleteStockSucursalHandler(db))
+	api.PUT("/stock-sucursal/:sucursal_id/:sku", Handlers.UpdateStockSucursalHandler(db))
+	api.DELETE("/stock-sucursal/:sucursal_id/:sku", Handlers.DeleteStockSucursalHandler(db))
 
 	// Rutas para Tipo de Sucursal
 	api.GET("/tipos-sucursal", Handlers.GetTipoSucursalHandler(db))
@@ -106,8 +106,8 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB) {
 
 	// Rutas para Stock de Proveedores
 	api.GET("/stock-proveedor", Handlers.GetStockProveedorHandler(db))
-	api.GET("/stock-proveedor/:proveedor_id/:producto_id", Handlers.GetStockProveedorByIDHandler(db))
+	api.GET("/stock-proveedor/:proveedor_id/:sku", Handlers.GetStockProveedorByIDHandler(db))
 	api.POST("/stock-proveedor", Handlers.CreateStockProveedorHandler(db))
-	api.PUT("/stock-proveedor/:proveedor_id/:producto_id", Handlers.UpdateStockProveedorHandler(db))
-	api.DELETE("/stock-proveedor/:proveedor_id/:producto_id", Handlers.DeleteStockProveedorHandler(db))
+	api.PUT("/stock-proveedor/:proveedor_id/:sku", Handlers.UpdateStockProveedorHandler(db))
+	api.DELETE("/stock-proveedor/:proveedor_id/:sku", Handlers.DeleteStockProveedorHandler(db))
 }

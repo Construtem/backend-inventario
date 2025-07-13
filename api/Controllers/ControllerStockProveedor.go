@@ -20,12 +20,12 @@ func GetStockProveedor(db *gorm.DB) ([]modelos.StockProveedor, error) {
 	return stock, nil
 }
 
-func GetStockProveedorByID(db *gorm.DB, proveedorID uint, productoID string) (*modelos.StockProveedor, error) {
+func GetStockProveedorByID(db *gorm.DB, proveedorID uint, sku string) (*modelos.StockProveedor, error) {
 	var stock modelos.StockProveedor
 	if err := db.
 		Preload("Proveedor").
 		Preload("Producto").
-		First(&stock, "proveedor_id = ? AND producto_id = ?", proveedorID, productoID).
+ First(&stock, "proveedor_id = ? AND sku = ?", proveedorID, sku).
 		Error; err != nil {
 		return nil, err
 	}
@@ -39,9 +39,9 @@ func CreateStockProveedor(db *gorm.DB, stock *modelos.StockProveedor) error {
 	return db.Create(stock).Error
 }
 
-func UpdateStockProveedor(db *gorm.DB, proveedorID uint, productoID string, actualizado modelos.StockProveedor) error {
+func UpdateStockProveedor(db *gorm.DB, proveedorID uint, sku string, actualizado modelos.StockProveedor) error {
 	var stock modelos.StockProveedor
-	if err := db.First(&stock, "proveedor_id = ? AND producto_id = ?", proveedorID, productoID).Error; err != nil {
+ if err := db.First(&stock, "proveedor_id = ? AND sku = ?", proveedorID, sku).Error; err != nil {
 		return errors.New("stock proveedor no encontrado")
 	}
 
@@ -51,6 +51,6 @@ func UpdateStockProveedor(db *gorm.DB, proveedorID uint, productoID string, actu
 	return db.Save(&stock).Error
 }
 
-func DeleteStockProveedor(db *gorm.DB, proveedorID uint, productoID string) error {
-	return db.Delete(&modelos.StockProveedor{}, "proveedor_id = ? AND producto_id = ?", proveedorID, productoID).Error
+func DeleteStockProveedor(db *gorm.DB, proveedorID uint, sku string) error {
+ return db.Delete(&modelos.StockProveedor{}, "proveedor_id = ? AND sku = ?", proveedorID, sku).Error
 }
