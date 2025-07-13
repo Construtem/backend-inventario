@@ -200,6 +200,7 @@ type Despacho struct {
 	Destino       uint      `gorm:"not null" json:"destino"` // FK a dir_cliente.id
 	FechaDespacho time.Time `gorm:"not null" json:"fecha_despacho"`
 	ValorDespacho float64   `gorm:"type:numeric(10,2);not null" json:"valor_despacho"`
+	Estado        string    `gorm:"size:20;not null;default:'pendiente'" json:"estado"`
 
 	Cotizacion        Cotizacion          `gorm:"foreignKey:CotizacionID;references:ID;constraint:OnDelete:CASCADE" json:"cotizacion"`
 	Camion            Camion              `gorm:"foreignKey:CamionID;references:ID;constraint:OnDelete:CASCADE" json:"camion"`
