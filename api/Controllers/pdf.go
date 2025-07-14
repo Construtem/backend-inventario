@@ -103,7 +103,7 @@ func generarPDFEstructurado(pdf *gofpdf.Fpdf, tr func(string) string, despacho *
 	pdf.SetTextColor(0, 0, 0)
 	pdf.SetFont("Arial", "B", 14)
 	pdf.SetXY(15, initialY+5)
-	pdf.Cell(0, 6, tr("COMERCIAL FRANCISCO TOSO LTDA"))
+	pdf.Cell(0, 6, tr("CONSTRUTEM S.A."))
 	pdf.Ln(6)
 
 	pdf.SetFont("Arial", "", 9)

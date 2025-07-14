@@ -26,12 +26,18 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB) {
 	api.PUT("/sucursales/:id", Handlers.UpdateSucursalHandler(db))
 	api.DELETE("/sucursales/:id", Handlers.DeleteSucursalHandler(db))
 
+	// Rutas específicas para Bodegas
+	api.GET("/bodegas", Handlers.GetBodegasHandler(db))
+
+	// Ruta temporal de debug para ver tipos de sucursal
+	api.GET("/debug/tipos-sucursal", Handlers.GetTiposSucursalDebugHandler(db))
+
 	// Rutas para Stock por Sucursal
 	api.GET("/stock-sucursal", Handlers.GetStockSucursalHandler(db))
-	api.GET("/stock-sucursal/:sucursal_id/:producto_id", Handlers.GetStockSucursalByIDHandler(db))
+	api.GET("/stock-sucursal/:sucursal_id/:sku", Handlers.GetStockSucursalByIDHandler(db))
 	api.POST("/stock-sucursal", Handlers.CreateStockSucursalHandler(db))
-	api.PUT("/stock-sucursal/:sucursal_id/:producto_id", Handlers.UpdateStockSucursalHandler(db))
-	api.DELETE("/stock-sucursal/:sucursal_id/:producto_id", Handlers.DeleteStockSucursalHandler(db))
+	api.PUT("/stock-sucursal/:sucursal_id/:sku", Handlers.UpdateStockSucursalHandler(db))
+	api.DELETE("/stock-sucursal/:sucursal_id/:sku", Handlers.DeleteStockSucursalHandler(db))
 
 	// Rutas para Tipo de Sucursal
 	api.GET("/tipos-sucursal", Handlers.GetTipoSucursalHandler(db))

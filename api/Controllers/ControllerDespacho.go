@@ -61,6 +61,11 @@ func CreateDespacho(db *gorm.DB, despacho *modelos.Despacho, productos []modelos
 func GetDespachos(db *gorm.DB) ([]DespachoConTotales, error) {
 	var despachos []modelos.Despacho
 
+	// Verificar la conexión a la base de datos
+	if db == nil {
+		return nil, errors.New("conexión a la base de datos no disponible")
+	}
+
 	err := db.
 		Preload("Cotizacion.Cliente.Tipo").
 		Preload("Cotizacion.Usuario.Rol").
@@ -70,7 +75,7 @@ func GetDespachos(db *gorm.DB) ([]DespachoConTotales, error) {
 		Preload("ProductosDespacho.Producto").
 		Find(&despachos).Error
 	if err != nil {
-		return nil, err
+		return nil, errors.New("error al consultar despachos en la base de datos: " + err.Error())
 	}
 
 	var resultado []DespachoConTotales
@@ -85,9 +90,10 @@ func GetDespachos(db *gorm.DB) ([]DespachoConTotales, error) {
 		}
 
 		resultado = append(resultado, DespachoConTotales{
-			Despacho:      despacho,
-			CantidadItems: totalItems,
-			TotalKg:       totalKg,
+			Despacho:          despacho,
+			CantidadItems:     totalItems,
+			TotalKg:           totalKg,
+			ProductosDespacho: despacho.ProductosDespacho,
 		})
 	}
 	return resultado, nil
@@ -115,9 +121,10 @@ func GetDespachoByID(db *gorm.DB, id uint) (*DespachoConTotales, error) {
 	}
 
 	resultado := DespachoConTotales{
-		Despacho:      despacho,
-		CantidadItems: totalItems,
-		TotalKg:       totalKg,
+		Despacho:          despacho,
+		CantidadItems:     totalItems,
+		TotalKg:           totalKg,
+		ProductosDespacho: despacho.ProductosDespacho,
 	}
 	return &resultado, nil
 }

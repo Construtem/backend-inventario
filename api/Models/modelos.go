@@ -72,13 +72,13 @@ func (Sucursal) TableName() string {
 }
 
 type StockSucursal struct {
-	ProductoID string  `gorm:"primaryKey;size:20;column:producto_id" json:"producto_id"`
-	SucursalID uint    `gorm:"primaryKey;column:sucursal_id" json:"sucursal_id"`
-	Cantidad   int     `gorm:"not null" json:"cantidad"`
-	Descuento  float64 `gorm:"type:numeric(5,2);default:0;check:descuento >= 0 AND descuento <= 100" json:"descuento"`
+	SKU        string  `gorm:"primaryKey;size:20;column:sku" json:"sku" binding:"required"`
+	SucursalID uint    `gorm:"primaryKey;column:sucursal_id" json:"sucursal_id" binding:"required"`
+	Cantidad   int     `gorm:"not null" json:"cantidad" binding:"required,min=0"`
+	Descuento  float64 `gorm:"type:numeric(5,2);default:0;check:descuento >= 0 AND descuento <= 100" json:"descuento" binding:"min=0,max=100"`
 
-	Producto Producto `gorm:"foreignKey:ProductoID;references:SKU;constraint:OnDelete:CASCADE" json:"producto"`
-	Sucursal Sucursal `gorm:"foreignKey:SucursalID;references:ID;constraint:OnDelete:CASCADE" json:"sucursal"`
+	Producto Producto `gorm:"foreignKey:SKU;references:SKU;constraint:OnDelete:CASCADE" json:"producto,omitempty"`
+	Sucursal Sucursal `gorm:"foreignKey:SucursalID;references:ID;constraint:OnDelete:CASCADE" json:"sucursal,omitempty"`
 }
 
 func (StockSucursal) TableName() string {
