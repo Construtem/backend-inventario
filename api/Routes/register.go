@@ -110,4 +110,14 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB) {
 	api.POST("/stock-proveedor", Handlers.CreateStockProveedorHandler(db))
 	api.PUT("/stock-proveedor/:proveedor_id/:producto_id", Handlers.UpdateStockProveedorHandler(db))
 	api.DELETE("/stock-proveedor/:proveedor_id/:producto_id", Handlers.DeleteStockProveedorHandler(db))
+
+	// Rutas para Productos de Despacho
+	api.GET("/productos_despacho", Handlers.GetProductosDespachoHandler(db))
+	api.GET("/productos_despacho/detallado", Handlers.GetProductosDespachoDetalladoHandler(db))
+	api.GET("/productos_despacho/despacho/:despacho_id", Handlers.GetProductosDespachoByDespachoIDHandler(db))
+	api.GET("/productos_despacho/despacho/:despacho_id/detallado", Handlers.GetProductosDespachoDetalladoByDespachoIDHandler(db))
+	api.GET("/productos_despacho/:despacho_id/:producto_id", Handlers.GetProductoDespachoByIDHandler(db))
+	api.POST("/productos_despacho", Handlers.CreateProductoDespachoHandler(db))
+	api.PUT("/productos_despacho/:despacho_id/:producto_id", Handlers.UpdateProductoDespachoHandler(db))
+	api.DELETE("/productos_despacho/:despacho_id/:producto_id", Handlers.DeleteProductoDespachoHandler(db))
 }
