@@ -37,9 +37,9 @@ func main() {
 	// Configurando CORS
 	router.Use(cors.New(cors.Config{
 		AllowOrigins: []string{
-			"http://localhost:3001", // Frontend de desarrollo
-			"http://localhost:3002", // Backup frontend
-			"http://localhost:8080", // Otro puerto común
+			os.Getenv("FRONT_VENTAS_URL"), // URL de ventas
+			os.Getenv("FRONT_INVENTARIO_URL"), // URL del frontend de inventario
+			os.Getenv("FRONT_FACTURACION_URL"), // URL del frontend de facturación
 		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
