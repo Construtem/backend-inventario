@@ -359,6 +359,22 @@ func AprobarDespacho(db *gorm.DB, cotID uint) error {
 }
 
 // Funciones auxiliares
+// Cambia el estado de los despachos asociados a una cotización
+func CambiarEstadoDespachosPorCotizacion(db *gorm.DB, cotizacionID uint, estado string) error {
+	if estado != "pendiente" && estado != "entregado" && estado != "aprobado" {
+		return errors.New("Estado no permitido")
+	}
+	result := db.Model(&modelos.Despacho{}).
+		Where("cotizacion_id = ?", cotizacionID).
+		Update("estado", estado)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("No se encontraron despachos para la cotización")
+	}
+	return nil
+}
 func pesoTotal(grupo []Unidad) float64 {
 	var total float64
 	for _, u := range grupo {
