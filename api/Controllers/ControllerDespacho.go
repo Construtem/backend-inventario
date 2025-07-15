@@ -12,9 +12,8 @@ import (
 // DespachoConTotales es una estructura que incluye un despacho y sus totales calculados
 type DespachoConTotales struct {
 	modelos.Despacho
-	CantidadItems     int                         `json:"cantidad_items"`
-	TotalKg           float64                     `json:"total_kg"`
-	ProductosDespacho []modelos.ProductosDespacho `json:"items"`
+	CantidadItems int     `json:"cantidad_items"`
+	TotalKg       float64 `json:"total_kg"`
 }
 
 // Se define una estructura interna para manejar cada unidad de producto
@@ -90,10 +89,9 @@ func GetDespachos(db *gorm.DB) ([]DespachoConTotales, error) {
 		}
 
 		resultado = append(resultado, DespachoConTotales{
-			Despacho:          despacho,
-			CantidadItems:     totalItems,
-			TotalKg:           totalKg,
-			ProductosDespacho: despacho.ProductosDespacho,
+			Despacho:      despacho,
+			CantidadItems: totalItems,
+			TotalKg:       totalKg,
 		})
 	}
 	return resultado, nil
@@ -107,7 +105,7 @@ func GetDespachoByID(db *gorm.DB, id uint) (*DespachoConTotales, error) {
 		Preload("Camion.Tipo").
 		Preload("OrigenSucursal.Tipo").
 		Preload("DestinoDirCliente.Cliente.Tipo").
-		Preload("ProductosDespacho.Producto").
+		Preload("ProductosDespacho.Producto.Proveedor").
 		First(&despacho, "id = ?", id).Error
 	if err != nil {
 		return nil, err
@@ -121,10 +119,9 @@ func GetDespachoByID(db *gorm.DB, id uint) (*DespachoConTotales, error) {
 	}
 
 	resultado := DespachoConTotales{
-		Despacho:          despacho,
-		CantidadItems:     totalItems,
-		TotalKg:           totalKg,
-		ProductosDespacho: despacho.ProductosDespacho,
+		Despacho:      despacho,
+		CantidadItems: totalItems,
+		TotalKg:       totalKg,
 	}
 	return &resultado, nil
 }
