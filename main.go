@@ -51,7 +51,7 @@ func main() {
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080" // Puerto por defecto
+		port = "8080" // Puerto alternativo
 	}
 
 	if err := router.Run(":" + port); err != nil {

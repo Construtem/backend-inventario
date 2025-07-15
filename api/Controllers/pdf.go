@@ -103,7 +103,7 @@ func generarPDFEstructurado(pdf *gofpdf.Fpdf, tr func(string) string, despacho *
 	pdf.SetTextColor(0, 0, 0)
 	pdf.SetFont("Arial", "B", 14)
 	pdf.SetXY(15, initialY+5)
-	pdf.Cell(0, 6, tr("CONSTRUTEM S.A."))
+	pdf.Cell(0, 6, tr("CONSTRUTEM S.A"))
 	pdf.Ln(6)
 
 	pdf.SetFont("Arial", "", 9)
@@ -192,12 +192,11 @@ func generarPDFEstructurado(pdf *gofpdf.Fpdf, tr func(string) string, despacho *
 	pdf.SetFillColor(255, 255, 255)
 
 	for _, item := range despacho.ProductosDespacho {
-		pesoTotal := float64(item.Cantidad) * item.Producto.Peso
-		pdf.CellFormat(30, 8, tr(item.Producto.SKU), "1", 0, "C", false, 0, "")
-		pdf.CellFormat(70, 8, tr(item.Producto.Nombre), "1", 0, "L", false, 0, "")
+		pdf.CellFormat(30, 8, tr(item.SKU), "1", 0, "C", false, 0, "")
+		pdf.CellFormat(70, 8, tr(item.Nombre), "1", 0, "L", false, 0, "")
 		pdf.CellFormat(20, 8, fmt.Sprintf("%d", item.Cantidad), "1", 0, "C", false, 0, "")
-		pdf.CellFormat(35, 8, fmt.Sprintf("%.2f", item.Producto.Peso), "1", 0, "R", false, 0, "")
-		pdf.CellFormat(35, 8, fmt.Sprintf("%.2f", pesoTotal), "1", 1, "R", false, 0, "")
+		pdf.CellFormat(35, 8, fmt.Sprintf("%.2f", item.Peso), "1", 0, "R", false, 0, "")
+		pdf.CellFormat(35, 8, fmt.Sprintf("%.2f", item.PesoTotal), "1", 1, "R", false, 0, "")
 	}
 
 	// 7. Línea bajo la tabla

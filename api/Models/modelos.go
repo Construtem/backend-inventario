@@ -215,7 +215,7 @@ func (Despacho) TableName() string {
 
 type ProductosDespacho struct {
 	DespachoID uint   `gorm:"primaryKey;column:despacho_id" json:"despacho_id"`
-	ProductoID string `gorm:"primaryKey;size:20;column:producto_id" json:"producto_id"`
+	ProductoID string `gorm:"primaryKey;size:20;column:sku" json:"producto_id"`
 	Cantidad   int    `gorm:"not null" json:"cantidad"`
 
 	Despacho Despacho `gorm:"foreignKey:DespachoID;references:ID;constraint:OnDelete:CASCADE" json:"despacho"`

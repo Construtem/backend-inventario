@@ -12,8 +12,10 @@ import (
 // DespachoConTotales es una estructura que incluye un despacho y sus totales calculados
 type DespachoConTotales struct {
 	modelos.Despacho
-	CantidadItems int     `json:"cantidad_items"`
-	TotalKg       float64 `json:"total_kg"`
+	CantidadItems     int                         `json:"cantidad_items"`
+	TotalKg           float64                     `json:"total_kg"`
+	TotalPrecio       float64                     `json:"total_precio"`
+	ProductosDespacho []ProductoDespachoDetallado `json:"items"`
 }
 
 // Se define una estructura interna para manejar cada unidad de producto
@@ -82,16 +84,39 @@ func GetDespachos(db *gorm.DB) ([]DespachoConTotales, error) {
 	for _, despacho := range despachos {
 		totalKg := 0.0
 		totalItems := 0
+		totalPrecio := 0.0
+		var productosDetallados []ProductoDespachoDetallado
 
 		for _, producto := range despacho.ProductosDespacho {
 			totalItems += producto.Cantidad
 			totalKg += float64(producto.Cantidad) * producto.Producto.Peso
+			totalPrecio += float64(producto.Cantidad) * producto.Producto.Precio
+
+			// Crear producto detallado
+			detallado := ProductoDespachoDetallado{
+				DespachoID:  producto.DespachoID,
+				ProductoID:  producto.ProductoID,
+				SKU:         producto.Producto.SKU,
+				Nombre:      producto.Producto.Nombre,
+				Descripcion: producto.Producto.Descripcion,
+				Cantidad:    producto.Cantidad,
+				Peso:        producto.Producto.Peso,
+				Alto:        producto.Producto.Alto,
+				Ancho:       producto.Producto.Ancho,
+				Largo:       producto.Producto.Largo,
+				Precio:      producto.Producto.Precio,
+				PesoTotal:   producto.Producto.Peso * float64(producto.Cantidad),
+				PrecioTotal: producto.Producto.Precio * float64(producto.Cantidad),
+			}
+			productosDetallados = append(productosDetallados, detallado)
 		}
 
 		resultado = append(resultado, DespachoConTotales{
-			Despacho:      despacho,
-			CantidadItems: totalItems,
-			TotalKg:       totalKg,
+			Despacho:          despacho,
+			CantidadItems:     totalItems,
+			TotalKg:           totalKg,
+			TotalPrecio:       totalPrecio,
+			ProductosDespacho: productosDetallados,
 		})
 	}
 	return resultado, nil
@@ -113,15 +138,39 @@ func GetDespachoByID(db *gorm.DB, id uint) (*DespachoConTotales, error) {
 
 	var totalKg float64
 	var totalItems int
+	var totalPrecio float64
+	var productosDetallados []ProductoDespachoDetallado
+
 	for _, p := range despacho.ProductosDespacho {
 		totalItems += p.Cantidad
 		totalKg += float64(p.Cantidad) * p.Producto.Peso
+		totalPrecio += float64(p.Cantidad) * p.Producto.Precio
+
+		// Crear producto detallado
+		detallado := ProductoDespachoDetallado{
+			DespachoID:  p.DespachoID,
+			ProductoID:  p.ProductoID,
+			SKU:         p.Producto.SKU,
+			Nombre:      p.Producto.Nombre,
+			Descripcion: p.Producto.Descripcion,
+			Cantidad:    p.Cantidad,
+			Peso:        p.Producto.Peso,
+			Alto:        p.Producto.Alto,
+			Ancho:       p.Producto.Ancho,
+			Largo:       p.Producto.Largo,
+			Precio:      p.Producto.Precio,
+			PesoTotal:   p.Producto.Peso * float64(p.Cantidad),
+			PrecioTotal: p.Producto.Precio * float64(p.Cantidad),
+		}
+		productosDetallados = append(productosDetallados, detallado)
 	}
 
 	resultado := DespachoConTotales{
-		Despacho:      despacho,
-		CantidadItems: totalItems,
-		TotalKg:       totalKg,
+		Despacho:          despacho,
+		CantidadItems:     totalItems,
+		TotalKg:           totalKg,
+		TotalPrecio:       totalPrecio,
+		ProductosDespacho: productosDetallados,
 	}
 	return &resultado, nil
 }
