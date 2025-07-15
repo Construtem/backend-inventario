@@ -57,6 +57,14 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB) {
 	api.POST("/despachos/aprobar", Handlers.AprobarDespachoHandler(db))
 	api.GET("/despachos/:id/pdf", Controllers.GenerarDespachoPDF(db))
 
+	// Nuevas rutas para Despachos con cálculo de distancia
+	api.GET("/despachos-distancia", Handlers.GetDespachosConDistanciaHandler(db))
+	api.GET("/despachos-distancia/:id", Handlers.GetDespachoByIDConDistanciaHandler(db))
+	api.POST("/despachos/calcular-distancia", Handlers.CalcularDespachoConDistanciaHandler(db))
+	api.GET("/despachos/cotizacion/:id/detallado", Handlers.GetDespachosPorCotizacionDetalladoHandler(db))
+	api.POST("/calcular-distancia", Handlers.CalcularDistanciaHandler(db))
+	api.GET("/test-distancia-real", Handlers.ProbarDistanciaDespachoRealHandler(db))
+
 	// Rutas para Tipos de Camion
 	api.GET("/tipos-camion", Handlers.GetTipoCamionHandler(db))
 	api.GET("/tipos-camion/:id", Handlers.GetTipoCamionByIDHandler(db))

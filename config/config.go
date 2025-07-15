@@ -19,3 +19,8 @@ func GetEnv(key string, fallback string) string {
 	}
 	return fallback
 }
+
+// GetGoogleMapsAPIKey obtiene la API key de Google Maps desde las variables de entorno
+func GetGoogleMapsAPIKey() string {
+	return GetEnv("GOOGLE_MAPS_API_KEY", "")
+}

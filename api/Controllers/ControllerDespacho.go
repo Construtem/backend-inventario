@@ -2,12 +2,34 @@ package Controllers
 
 import (
 	modelos "backend-inventario/api/Models"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"time"
 
 	"gorm.io/gorm"
 )
+
+// Estructuras para la respuesta de Google Maps Distance Matrix API
+type DistanceMatrixResponse struct {
+	Status string `json:"status"`
+	Rows   []struct {
+		Elements []struct {
+			Status   string `json:"status"`
+			Distance struct {
+				Text  string `json:"text"`
+				Value int    `json:"value"` // distancia en metros
+			} `json:"distance"`
+			Duration struct {
+				Text  string `json:"text"`
+				Value int    `json:"value"` // duración en segundos
+			} `json:"duration"`
+		} `json:"elements"`
+	} `json:"rows"`
+}
 
 // DespachoConTotales es una estructura que incluye un despacho y sus totales calculados
 type DespachoConTotales struct {
@@ -15,7 +37,9 @@ type DespachoConTotales struct {
 	CantidadItems     int                         `json:"cantidad_items"`
 	TotalKg           float64                     `json:"total_kg"`
 	TotalPrecio       float64                     `json:"total_precio"`
-	ProductosDespacho []ProductoDespachoDetallado `json:"items"`
+	ProductosDespacho []ProductoDespachoDetallado `json:"productos"`
+	DistanciaKm       float64                     `json:"distancia_km,omitempty"`      // Distancia en kilómetros
+	DuracionMinutos   int                         `json:"duracion_minutos,omitempty"`  // Duración en minutos
 }
 
 // Se define una estructura interna para manejar cada unidad de producto
@@ -60,6 +84,10 @@ func CreateDespacho(db *gorm.DB, despacho *modelos.Despacho, productos []modelos
 }
 
 func GetDespachos(db *gorm.DB) ([]DespachoConTotales, error) {
+	return GetDespachosConDistancia(db, "")
+}
+
+func GetDespachosConDistancia(db *gorm.DB, googleMapsAPIKey string) ([]DespachoConTotales, error) {
 	var despachos []modelos.Despacho
 
 	// Verificar la conexión a la base de datos
@@ -111,11 +139,24 @@ func GetDespachos(db *gorm.DB) ([]DespachoConTotales, error) {
 			productosDetallados = append(productosDetallados, detallado)
 		}
 
+		// Calcular distancia si se proporciona la API key
+		var distanciaKm float64
+		var duracionMinutos int
+		if googleMapsAPIKey != "" {
+			if dist, dur, err := CalcularDistanciaDespacho(db, googleMapsAPIKey, &despacho); err == nil {
+				distanciaKm = dist
+				duracionMinutos = dur
+			}
+			// Si hay error en el cálculo de distancia, simplemente no la incluimos pero continuamos
+		}
+
 		resultado = append(resultado, DespachoConTotales{
 			Despacho:          despacho,
 			CantidadItems:     totalItems,
 			TotalKg:           totalKg,
 			TotalPrecio:       totalPrecio,
+			DistanciaKm:       distanciaKm,
+			DuracionMinutos:   duracionMinutos,
 			ProductosDespacho: productosDetallados,
 		})
 	}
@@ -123,6 +164,10 @@ func GetDespachos(db *gorm.DB) ([]DespachoConTotales, error) {
 }
 
 func GetDespachoByID(db *gorm.DB, id uint) (*DespachoConTotales, error) {
+	return GetDespachoByIDConDistancia(db, id, "")
+}
+
+func GetDespachoByIDConDistancia(db *gorm.DB, id uint, googleMapsAPIKey string) (*DespachoConTotales, error) {
 	var despacho modelos.Despacho
 	err := db.
 		Preload("Cotizacion.Cliente.Tipo").
@@ -165,11 +210,24 @@ func GetDespachoByID(db *gorm.DB, id uint) (*DespachoConTotales, error) {
 		productosDetallados = append(productosDetallados, detallado)
 	}
 
+	// Calcular distancia si se proporciona la API key
+	var distanciaKm float64
+	var duracionMinutos int
+	if googleMapsAPIKey != "" {
+		if dist, dur, err := CalcularDistanciaDespacho(db, googleMapsAPIKey, &despacho); err == nil {
+			distanciaKm = dist
+			duracionMinutos = dur
+		}
+		// Si hay error en el cálculo de distancia, simplemente no la incluimos pero continuamos
+	}
+
 	resultado := DespachoConTotales{
 		Despacho:          despacho,
 		CantidadItems:     totalItems,
 		TotalKg:           totalKg,
 		TotalPrecio:       totalPrecio,
+		DistanciaKm:       distanciaKm,
+		DuracionMinutos:   duracionMinutos,
 		ProductosDespacho: productosDetallados,
 	}
 	return &resultado, nil
@@ -188,6 +246,10 @@ func DeleteDespacho(db *gorm.DB, id uint) error {
 }
 
 func CalcularDespacho(db *gorm.DB, cotID uint) ([]modelos.Despacho, error) {
+	return CalcularDespachoConDistancia(db, cotID, "")
+}
+
+func CalcularDespachoConDistancia(db *gorm.DB, cotID uint, googleMapsAPIKey string) ([]modelos.Despacho, error) {
 	// Se eliminan previamente los despachos existentes para esta cotización (si los hay)
 	if err := db.Where("cotizacion_id = ?", cotID).Delete(&modelos.Despacho{}).Error; err != nil {
 		return nil, err
@@ -299,6 +361,15 @@ func CalcularDespacho(db *gorm.DB, cotID uint) ([]modelos.Despacho, error) {
 			Estado:        "pendiente",                 // Estado inicial
 		}
 
+		// 🗺️ Calcular distancia si se proporciona la API key
+		if googleMapsAPIKey != "" {
+			if distancia, _, err := CalcularDistanciaDespacho(db, googleMapsAPIKey, &despacho); err == nil {
+				// Aquí podrías calcular el valor del despacho basado en la distancia
+				// Por ejemplo: despacho.ValorDespacho = distancia * tarifaPorKm
+				_ = distancia // Por ahora solo calculamos pero no asignamos valor automáticamente
+			}
+		}
+
 		if err := db.Create(&despacho).Error; err != nil {
 			return nil, err
 		}
@@ -329,6 +400,10 @@ func CalcularDespacho(db *gorm.DB, cotID uint) ([]modelos.Despacho, error) {
 }
 
 func GetDespachosPorCotizacion(db *gorm.DB, cotID uint) ([]modelos.Despacho, error) {
+	return GetDespachosPorCotizacionConDistancia(db, cotID, "")
+}
+
+func GetDespachosPorCotizacionConDistancia(db *gorm.DB, cotID uint, googleMapsAPIKey string) ([]modelos.Despacho, error) {
 	// Se obtienen todos los despachos asociados a la cotización especificada
 	var despachos []modelos.Despacho
 	err := db.
@@ -344,6 +419,78 @@ func GetDespachosPorCotizacion(db *gorm.DB, cotID uint) ([]modelos.Despacho, err
 		return nil, err
 	}
 	return despachos, nil
+}
+
+// GetDespachosPorCotizacionDetallado obtiene despachos con totales y distancias calculadas
+func GetDespachosPorCotizacionDetallado(db *gorm.DB, cotID uint, googleMapsAPIKey string) ([]DespachoConTotales, error) {
+	var despachos []modelos.Despacho
+	err := db.
+		Preload("Cotizacion.Cliente.Tipo").
+		Preload("Cotizacion.Usuario.Rol").
+		Preload("Camion.Tipo").
+		Preload("OrigenSucursal.Tipo").
+		Preload("DestinoDirCliente.Cliente.Tipo").
+		Preload("ProductosDespacho.Producto").
+		Where("cotizacion_id = ?", cotID).
+		Find(&despachos).Error
+	if err != nil {
+		return nil, err
+	}
+
+	var resultado []DespachoConTotales
+
+	for _, despacho := range despachos {
+		totalKg := 0.0
+		totalItems := 0
+		totalPrecio := 0.0
+		var productosDetallados []ProductoDespachoDetallado
+
+		for _, producto := range despacho.ProductosDespacho {
+			totalItems += producto.Cantidad
+			totalKg += float64(producto.Cantidad) * producto.Producto.Peso
+			totalPrecio += float64(producto.Cantidad) * producto.Producto.Precio
+
+			// Crear producto detallado
+			detallado := ProductoDespachoDetallado{
+				DespachoID:  producto.DespachoID,
+				ProductoID:  producto.ProductoID,
+				SKU:         producto.Producto.SKU,
+				Nombre:      producto.Producto.Nombre,
+				Descripcion: producto.Producto.Descripcion,
+				Cantidad:    producto.Cantidad,
+				Peso:        producto.Producto.Peso,
+				Alto:        producto.Producto.Alto,
+				Ancho:       producto.Producto.Ancho,
+				Largo:       producto.Producto.Largo,
+				Precio:      producto.Producto.Precio,
+				PesoTotal:   producto.Producto.Peso * float64(producto.Cantidad),
+				PrecioTotal: producto.Producto.Precio * float64(producto.Cantidad),
+			}
+			productosDetallados = append(productosDetallados, detallado)
+		}
+
+		// Calcular distancia si se proporciona la API key
+		var distanciaKm float64
+		var duracionMinutos int
+		if googleMapsAPIKey != "" {
+			if dist, dur, err := CalcularDistanciaDespacho(db, googleMapsAPIKey, &despacho); err == nil {
+				distanciaKm = dist
+				duracionMinutos = dur
+			}
+		}
+
+		resultado = append(resultado, DespachoConTotales{
+			Despacho:          despacho,
+			CantidadItems:     totalItems,
+			TotalKg:           totalKg,
+			TotalPrecio:       totalPrecio,
+			DistanciaKm:       distanciaKm,
+			DuracionMinutos:   duracionMinutos,
+			ProductosDespacho: productosDetallados,
+		})
+	}
+
+	return resultado, nil
 }
 
 func AprobarDespacho(db *gorm.DB, cotID uint) error {
@@ -373,4 +520,95 @@ func volumenTotal(grupo []Unidad) float64 {
 		total += u.Volumen
 	}
 	return total
+}
+
+// CalcularDistancia calcula la distancia entre origen y destino usando Google Maps Distance Matrix API
+func CalcularDistancia(apiKey, origen, destino string) (float64, int, error) {
+	if apiKey == "" {
+		return 0, 0, errors.New("API key de Google Maps no configurada")
+	}
+
+	// Construir la URL para la API de Google Maps Distance Matrix
+	baseURL := "https://maps.googleapis.com/maps/api/distancematrix/json"
+	params := url.Values{}
+	params.Add("origins", origen)
+	params.Add("destinations", destino)
+	params.Add("mode", "driving")
+	params.Add("language", "es")
+	params.Add("key", apiKey)
+
+	requestURL := baseURL + "?" + params.Encode()
+	fmt.Printf("🌐 URL de la API: %s\n", requestURL)
+
+	// Realizar la petición HTTP
+	resp, err := http.Get(requestURL)
+	if err != nil {
+		fmt.Printf("❌ Error en petición HTTP: %v\n", err)
+		return 0, 0, fmt.Errorf("error al consultar Google Maps API: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		fmt.Printf("❌ Error HTTP status: %d\n", resp.StatusCode)
+		return 0, 0, fmt.Errorf("error HTTP %d al consultar Google Maps API", resp.StatusCode)
+	}
+
+	// Leer la respuesta
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Printf("❌ Error leyendo respuesta: %v\n", err)
+		return 0, 0, fmt.Errorf("error al leer respuesta de Google Maps API: %v", err)
+	}
+
+	fmt.Printf("📡 Respuesta de Google Maps API: %s\n", string(body))
+
+	// Parsear la respuesta JSON
+	var response DistanceMatrixResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		fmt.Printf("❌ Error parseando JSON: %v\n", err)
+		return 0, 0, fmt.Errorf("error al parsear respuesta de Google Maps API: %v", err)
+	}
+
+	// Verificar el estado de la respuesta
+	if response.Status != "OK" {
+		fmt.Printf("❌ Error en status de API: %s\n", response.Status)
+		return 0, 0, fmt.Errorf("error en Google Maps API: %s", response.Status)
+	}
+
+	// Verificar que hay resultados
+	if len(response.Rows) == 0 || len(response.Rows[0].Elements) == 0 {
+		return 0, 0, errors.New("no se encontraron resultados de distancia")
+	}
+
+	element := response.Rows[0].Elements[0]
+	if element.Status != "OK" {
+		return 0, 0, fmt.Errorf("error en cálculo de distancia: %s", element.Status)
+	}
+
+	// Convertir de metros a kilómetros y de segundos a minutos
+	distanciaKm := float64(element.Distance.Value) / 1000.0
+	duracionMinutos := element.Duration.Value / 60
+
+	return distanciaKm, duracionMinutos, nil
+}
+
+// CalcularDistanciaDespacho calcula la distancia de un despacho específico
+func CalcularDistanciaDespacho(db *gorm.DB, apiKey string, despacho *modelos.Despacho) (float64, int, error) {
+	// Obtener información de origen (sucursal)
+	var sucursal modelos.Sucursal
+	if err := db.First(&sucursal, despacho.Origen).Error; err != nil {
+		return 0, 0, fmt.Errorf("no se encontró la sucursal de origen: %v", err)
+	}
+
+	// Obtener información de destino (dirección del cliente)
+	var direccion modelos.DirCliente
+	if err := db.First(&direccion, despacho.Destino).Error; err != nil {
+		return 0, 0, fmt.Errorf("no se encontró la dirección de destino: %v", err)
+	}
+
+	// Construir las direcciones para la API
+	origen := sucursal.Direccion + ", " + sucursal.Comuna + ", " + sucursal.Ciudad
+	destino := direccion.Direccion + ", " + direccion.Comuna + ", " + direccion.Ciudad
+
+	return CalcularDistancia(apiKey, origen, destino)
 }
