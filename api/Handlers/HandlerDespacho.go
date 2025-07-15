@@ -164,3 +164,34 @@ func AprobarDespachoHandler(db *gorm.DB) gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{"message": "Despacho aprobado exitosamente"})
 	}
 }
+
+// GetFichaDespachoHandler retorna la ficha de despacho y la factura electrónica en un solo JSON
+func GetFichaDespachoHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		idStr := c.Param("id")
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+			return
+		}
+
+		// Obtener la ficha de despacho
+		ficha, err := Controllers.GetDespachoByID(db, uint(id))
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Despacho no encontrado", "details": err.Error()})
+			return
+		}
+
+		// Obtener la factura electrónica usando el controlador
+		factura, err := Controllers.GetFacturaElectronicaByDespachoID(db, uint(id))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo obtener la factura electrónica", "details": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"ficha_despacho":      ficha,
+			"factura_electronica": factura,
+		})
+	}
+}
