@@ -56,6 +56,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB) {
 	api.GET("/despachos/cotizacion/:id", Handlers.GetDespachosPorCotizacionHandler(db))
 	api.POST("/despachos/aprobar", Handlers.AprobarDespachoHandler(db))
 	api.GET("/despachos/:id/pdf", Controllers.GenerarDespachoPDF(db))
+	api.GET("/despachos/:id/ficha", Handlers.GetFichaDespachoHandler(db))
 
 	// Rutas para Tipos de Camion
 	api.GET("/tipos-camion", Handlers.GetTipoCamionHandler(db))

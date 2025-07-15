@@ -374,3 +374,21 @@ func volumenTotal(grupo []Unidad) float64 {
 	}
 	return total
 }
+
+// GetFacturaElectronicaByDespachoID retorna una factura electrónica simulada para un despacho
+func GetFacturaElectronicaByDespachoID(db *gorm.DB, despachoID uint) (map[string]interface{}, error) {
+	ficha, err := GetDespachoByID(db, despachoID)
+	if err != nil {
+		return nil, err
+	}
+	factura := map[string]interface{}{
+		"folio":       ficha.ID,
+		"fecha":       ficha.FechaDespacho,
+		"cliente":     ficha.Cotizacion.Cliente.Nombre,
+		"rut_cliente": ficha.Cotizacion.Cliente.Rut,
+		"total":       ficha.TotalPrecio,
+		"estado":      ficha.Cotizacion.Estado,
+		"tipo":        "Factura Electrónica",
+	}
+	return factura, nil
+}
