@@ -11,8 +11,8 @@ import (
 func GetProductos(db *gorm.DB) ([]modelos.Producto, error) {
 	var productos []modelos.Producto
 	if err := db.
-		Preload("Categoria").
 		Preload("Proveedor").
+		Preload("Categoria").
 		Find(&productos).Error; err != nil {
 		return nil, err
 	}
@@ -23,8 +23,8 @@ func GetProductos(db *gorm.DB) ([]modelos.Producto, error) {
 func GetProductoBySKU(db *gorm.DB, sku string) (*modelos.Producto, error) {
 	var producto modelos.Producto
 	if err := db.
-		Preload("Categoria").
 		Preload("Proveedor").
+		Preload("Categoria").
 		First(&producto, "sku = ?", sku).Error; err != nil {
 		return nil, err
 	}

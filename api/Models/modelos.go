@@ -28,10 +28,6 @@ type Categoria struct {
 	Nombre string `gorm:"size:100;not null;unique" json:"nombre"`
 }
 
-func (Categoria) TableName() string {
-	return "categorias"
-}
-
 type Proveedor struct {
 	ID        uint   `gorm:"primaryKey" json:"id"`
 	Marca     string `gorm:"size:30;not null" json:"marca"`
