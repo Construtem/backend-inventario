@@ -21,6 +21,8 @@ func main() {
 	// En producción (Kubernetes), solo intenta cargar .env en local, pero nunca detengas la app si no existe
 	config.LoadEnv() // Esto ya maneja el log si no existe .env
 
+	// Conectar a la base de datos
+	log.Printf("Conectando a la base de datos %s...", os.Getenv("DB_NAME"))
 	database, err := db.ConectarDB()
 	if err != nil {
 		log.Fatalf("Error al conectar a la base de datos: %v", err)
