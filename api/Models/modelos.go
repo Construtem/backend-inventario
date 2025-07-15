@@ -12,12 +12,24 @@ type Producto struct {
 	Ancho       float64 `gorm:"type:numeric(10,2);not null" json:"ancho"`
 	Alto        float64 `gorm:"type:numeric(10,2);not null" json:"alto"`
 	Precio      float64 `gorm:"type:numeric(10,2);not null" json:"precio"`
+	CategoriaID *uint   `gorm:"column:categoria_id" json:"categoria_id"`
+	Estado      bool    `gorm:"default:true" json:"estado"`
 
 	Proveedor Proveedor `gorm:"foreignKey:ProveedorID;references:ID;constraint:OnDelete:CASCADE" json:"proveedor"`
+	Categoria Categoria `gorm:"foreignKey:CategoriaID;references:ID;constraint:OnDelete:SET NULL" json:"categoria,omitempty"`
 }
 
 func (Producto) TableName() string {
 	return "productos"
+}
+
+type Categoria struct {
+	ID     uint   `gorm:"primaryKey" json:"id"`
+	Nombre string `gorm:"size:100;not null;unique" json:"nombre"`
+}
+
+func (Categoria) TableName() string {
+	return "categorias"
 }
 
 type Proveedor struct {
