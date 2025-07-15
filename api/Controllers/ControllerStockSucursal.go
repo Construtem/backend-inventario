@@ -16,9 +16,9 @@ func GetStockSucursal(db *gorm.DB) ([]modelos.StockSucursal, error) {
 }
 
 // GetStockSucursalByID obtiene un registro de stock por su ID
-func GetStockSucursalByID(db *gorm.DB, sucursalID uint, productoID string) (*modelos.StockSucursal, error) {
+func GetStockSucursalByID(db *gorm.DB, sucursalID uint, sku string) (*modelos.StockSucursal, error) {
 	var stock modelos.StockSucursal
-	if err := db.Where("sucursal_id = ? AND producto_id = ?", sucursalID, productoID).Preload("Producto").Preload("Sucursal").First(&stock).Error; err != nil {
+	if err := db.Where("sucursal_id = ? AND sku = ?", sucursalID, sku).Preload("Producto").Preload("Sucursal").First(&stock).Error; err != nil {
 		return nil, err
 	}
 	return &stock, nil
@@ -30,13 +30,13 @@ func CreateStockSucursal(db *gorm.DB, nuevo *modelos.StockSucursal) error {
 }
 
 // UpdateStockSucursal actualiza un registro de stock existente
-func UpdateStockSucursal(db *gorm.DB, productoID string, sucursalID uint, actualizado *modelos.StockSucursal) error {
+func UpdateStockSucursal(db *gorm.DB, sku string, sucursalID uint, actualizado *modelos.StockSucursal) error {
 	return db.Model(&modelos.StockSucursal{}).
-		Where("producto_id = ? AND sucursal_id = ?", productoID, sucursalID).
+		Where("sku = ? AND sucursal_id = ?", sku, sucursalID).
 		Updates(actualizado).Error
 }
 
 // DeleteStockSucursal elimina un registro de stock
-func DeleteStockSucursal(db *gorm.DB, productoID string, sucursalID uint) error {
-	return db.Where("producto_id = ? AND sucursal_id = ?", productoID, sucursalID).Delete(&modelos.StockSucursal{}).Error
+func DeleteStockSucursal(db *gorm.DB, sku string, sucursalID uint) error {
+	return db.Where("sku = ? AND sucursal_id = ?", sku, sucursalID).Delete(&modelos.StockSucursal{}).Error
 }

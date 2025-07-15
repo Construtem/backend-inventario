@@ -21,6 +21,32 @@ func GetSucursalesHandler(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
+func GetBodegasHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		bodegas, err := Controllers.GetBodegas(db)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener bodegas", "details": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, bodegas)
+	}
+}
+
+// Handler para debug - ver todos los tipos de sucursal disponibles
+func GetTiposSucursalDebugHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		tipos, err := Controllers.GetTipoSucursal(db)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener tipos", "details": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"tipos_disponibles": tipos,
+			"message":           "Estos son todos los tipos de sucursal en la base de datos",
+		})
+	}
+}
+
 func GetSucursalByIDHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		idStr := c.Param("id")
