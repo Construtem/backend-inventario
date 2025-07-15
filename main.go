@@ -36,9 +36,9 @@ func main() {
 
 	// Configurando CORS
 	router.Use(cors.New(cors.Config{
-		AllowOrigins: []string{
-			os.Getenv("FRONT_VENTAS_URL"), // URL de ventas
-			os.Getenv("FRONT_INVENTARIO_URL"), // URL del frontend de inventario
+		AllowOrigins: []string{ // Lista de URLs permitidas para CORS
+			os.Getenv("FRONT_VENTAS_URL"),      // URL del frontend de ventas
+			os.Getenv("FRONT_INVENTARIO_URL"),  // URL del frontend de inventario
 			os.Getenv("FRONT_FACTURACION_URL"), // URL del frontend de facturación
 		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
