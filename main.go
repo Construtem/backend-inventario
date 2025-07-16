@@ -37,12 +37,19 @@ func main() {
 	router := gin.Default()
 
 	// Configurando CORS
+	allowedOrigins := []string{
+		os.Getenv("FRONT_VENTAS_URL"),      // URL del frontend de ventas
+		os.Getenv("FRONT_INVENTARIO_URL"),  // URL del frontend de inventario
+		os.Getenv("FRONT_FACTURACION_URL"), // URL del frontend de facturación
+	}
+
+	// Agregar origen de desarrollo si está configurado
+	if devOrigin := os.Getenv("ALLOWED_ORIGINS"); devOrigin != "" {
+		allowedOrigins = append(allowedOrigins, devOrigin)
+	}
+
 	router.Use(cors.New(cors.Config{
-		AllowOrigins: []string{ // Lista de URLs permitidas para CORS
-			os.Getenv("FRONT_VENTAS_URL"),      // URL del frontend de ventas
-			os.Getenv("FRONT_INVENTARIO_URL"),  // URL del frontend de inventario
-			os.Getenv("FRONT_FACTURACION_URL"), // URL del frontend de facturación
-		},
+		AllowOrigins:     allowedOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
