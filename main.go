@@ -11,6 +11,7 @@ import (
 	"backend-inventario/config"
 	"backend-inventario/handlers"
 	"backend-inventario/services"
+	"backend-inventario/scripts"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"

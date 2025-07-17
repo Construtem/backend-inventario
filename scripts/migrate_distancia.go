@@ -1,4 +1,4 @@
-package main
+package scripts
 
 import (
 	"backend-inventario/api/db"
@@ -7,7 +7,7 @@ import (
 	"log"
 )
 
-func main() {
+func migrate_distancia() {
 	// Cargar variables de entorno
 	config.LoadEnv()
 
