@@ -6,8 +6,16 @@ import (
 	"fmt"
 	"time"
 
+	"encoding/json"
+	"io"
+	"net/http"
+	"net/url"
+	"os"
+
 	"gorm.io/gorm"
 )
+
+//"strconv"
 
 // DespachoConTotales es una estructura que incluye un despacho y sus totales calculados
 type DespachoConTotales struct {
@@ -268,6 +276,22 @@ func CalcularDespacho(db *gorm.DB, cotID uint) ([]modelos.Despacho, error) {
 		grupos = append(grupos, actuales) // se agrega el último grupo
 	}
 
+	// 🔢 Índice de precio por km (puede venir de una config .env o base de datos)
+	precioPorKm := 500.0 // Ejemplo: 500 CLP por km
+
+	// Dirección origen y destino (como string)
+	origenStr := fmt.Sprintf("%s, %s", items[0].Sucursal.Direccion, items[0].Sucursal.Ciudad)
+	destinoStr := fmt.Sprintf("%s, %s", destino.Direccion, destino.Ciudad)
+
+	// Obtener distancia
+	distanciaKm, err := obtenerDistanciaEnKm(origenStr, destinoStr)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener distancia: %v", err)
+	}
+
+	// Calcular costo total de envío
+	costoTotalEnvio := float64(len(grupos)) * distanciaKm * precioPorKm
+
 	var despachos []modelos.Despacho
 
 	// 🚛 Por cada grupo de unidades, se crea un despacho nuevo
@@ -294,9 +318,9 @@ func CalcularDespacho(db *gorm.DB, cotID uint) ([]modelos.Despacho, error) {
 			CamionID:      camion.ID,
 			Origen:        grupo[0].SucursalID,
 			Destino:       destino.ID,
-			FechaDespacho: time.Now().AddDate(0, 0, 1), // Fecha de despacho al día siguiente
-			ValorDespacho: 0,                           // Valor del despacho aún no calculado
-			Estado:        "pendiente",                 // Estado inicial
+			FechaDespacho: time.Now().AddDate(0, 0, 1),            // Fecha de despacho al día siguiente
+			ValorDespacho: costoTotalEnvio / float64(len(grupos)), // repartir el total entre camiones
+			Estado:        "pendiente",                            // Estado inicial
 		}
 
 		if err := db.Create(&despacho).Error; err != nil {
@@ -359,6 +383,22 @@ func AprobarDespacho(db *gorm.DB, cotID uint) error {
 }
 
 // Funciones auxiliares
+// Cambia el estado de los despachos asociados a una cotización
+func CambiarEstadoDespachosPorCotizacion(db *gorm.DB, cotizacionID uint, estado string) error {
+	if estado != "pendiente" && estado != "entregado" && estado != "aprobado" {
+		return errors.New("estado no permitido")
+	}
+	result := db.Model(&modelos.Despacho{}).
+		Where("cotizacion_id = ?", cotizacionID).
+		Update("estado", estado)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("no se encontraron despachos para la cotización")
+	}
+	return nil
+}
 func pesoTotal(grupo []Unidad) float64 {
 	var total float64
 	for _, u := range grupo {
@@ -374,7 +414,6 @@ func volumenTotal(grupo []Unidad) float64 {
 	}
 	return total
 }
-
 // GetDespachoDistanciaByID obtiene un despacho con información completa para rutas
 func GetDespachoDistanciaByID(db *gorm.DB, id uint) (*modelos.DespachoDistanciaResponse, error) {
 	var despacho modelos.Despacho
@@ -565,4 +604,48 @@ func ActualizarDistanciaDespacho(db *gorm.DB, id uint, distancia, tiempo string)
 	}
 
 	return nil
+}
+  
+// GetFacturaElectronicaByDespachoID retorna una factura electrónica simulada para un despacho
+func GetFacturaElectronicaByDespachoID(db *gorm.DB, despachoID uint) (map[string]interface{}, error) {
+	ficha, err := GetDespachoByID(db, despachoID)
+	if err != nil {
+		return nil, err
+	}
+	factura := map[string]interface{}{
+		"folio":       ficha.ID,
+		"fecha":       ficha.FechaDespacho,
+		"cliente":     ficha.Cotizacion.Cliente.Nombre,
+		"rut_cliente": ficha.Cotizacion.Cliente.Rut,
+		"total":       ficha.TotalPrecio,
+		"estado":      ficha.Cotizacion.Estado,
+		"tipo":        "Factura Electrónica",
+	}
+	return factura, nil
+}
+
+func obtenerDistanciaEnKm(origen, destino string) (float64, error) {
+	apiKey := os.Getenv("GOOGLE_MAPS_API_KEY")
+	urlGoogle := fmt.Sprintf("https://maps.googleapis.com/maps/api/directions/json?origin=%s&destination=%s&key=%s",
+		url.QueryEscape(origen), url.QueryEscape(destino), apiKey)
+
+	resp, err := http.Get(urlGoogle)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	var data map[string]interface{}
+	json.Unmarshal(body, &data)
+
+	routes := data["routes"].([]interface{})
+	if len(routes) == 0 {
+		return 0, fmt.Errorf("no se encontraron rutas")
+	}
+
+	legs := routes[0].(map[string]interface{})["legs"].([]interface{})
+	distancia := legs[0].(map[string]interface{})["distance"].(map[string]interface{})["value"].(float64) // metros
+
+	return distancia / 1000, nil // convertimos a km
 }

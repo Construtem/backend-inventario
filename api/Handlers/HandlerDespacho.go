@@ -164,3 +164,62 @@ func AprobarDespachoHandler(db *gorm.DB) gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{"message": "Despacho aprobado exitosamente"})
 	}
 }
+
+// Cambia el estado de los despachos asociados a una cotización
+func CambiarEstadoDespachosHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req struct {
+			CotizacionID uint   `json:"cotizacion_id"`
+			Estado       string `json:"estado"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Solicitud inválida", "details": err.Error()})
+			return
+		}
+		err := Controllers.CambiarEstadoDespachosPorCotizacion(db, req.CotizacionID, req.Estado)
+		if err != nil {
+			if err.Error() == "Estado no permitido" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+			if err.Error() == "No se encontraron despachos para la cotización" {
+				c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al actualizar estado", "details": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "Estado de despachos actualizado exitosamente"})
+	}
+}
+
+// GetFichaDespachoHandler retorna la ficha de despacho y la factura electrónica en un solo JSON
+func GetFichaDespachoHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		idStr := c.Param("id")
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+			return
+		}
+
+		// Obtener la ficha de despacho
+		ficha, err := Controllers.GetDespachoByID(db, uint(id))
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Despacho no encontrado", "details": err.Error()})
+			return
+		}
+
+		// Obtener la factura electrónica usando el controlador
+		factura, err := Controllers.GetFacturaElectronicaByDespachoID(db, uint(id))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo obtener la factura electrónica", "details": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"ficha_despacho":      ficha,
+			"factura_electronica": factura,
+		})
+	}
+}
