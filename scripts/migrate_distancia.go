@@ -7,7 +7,8 @@ import (
 	"log"
 )
 
-func migrate_distancia() {
+// MigrateDistancia agrega las columnas de distancia y tiempo estimado a la tabla despacho
+func MigrateDistancia() {
 	// Cargar variables de entorno
 	config.LoadEnv()
 
