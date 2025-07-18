@@ -20,9 +20,10 @@ import (
 // DespachoConTotales es una estructura que incluye un despacho y sus totales calculados
 type DespachoConTotales struct {
 	modelos.Despacho
-	CantidadItems     int                         `json:"cantidad_items"`
-	TotalKg           float64                     `json:"total_kg"`
-	TotalPrecio       float64                     `json:"total_precio"`
+	CantidadItems     int     `json:"cantidad_items"`
+	TotalKg           float64 `json:"total_kg"`
+	TotalPrecio       float64 `json:"total_precio"`
+	IVA               float64
 	ProductosDespacho []ProductoDespachoDetallado `json:"items"`
 }
 
@@ -173,11 +174,14 @@ func GetDespachoByID(db *gorm.DB, id uint) (*DespachoConTotales, error) {
 		productosDetallados = append(productosDetallados, detallado)
 	}
 
+	iva := totalPrecio * 0.19
+
 	resultado := DespachoConTotales{
 		Despacho:          despacho,
 		CantidadItems:     totalItems,
 		TotalKg:           totalKg,
 		TotalPrecio:       totalPrecio,
+		IVA:               iva,
 		ProductosDespacho: productosDetallados,
 	}
 	return &resultado, nil
@@ -414,6 +418,7 @@ func volumenTotal(grupo []Unidad) float64 {
 	}
 	return total
 }
+
 // GetDespachoDistanciaByID obtiene un despacho con información completa para rutas
 func GetDespachoDistanciaByID(db *gorm.DB, id uint) (*modelos.DespachoDistanciaResponse, error) {
 	var despacho modelos.Despacho
@@ -605,7 +610,7 @@ func ActualizarDistanciaDespacho(db *gorm.DB, id uint, distancia, tiempo string)
 
 	return nil
 }
-  
+
 // GetFacturaElectronicaByDespachoID retorna una factura electrónica simulada para un despacho
 func GetFacturaElectronicaByDespachoID(db *gorm.DB, despachoID uint) (map[string]interface{}, error) {
 	ficha, err := GetDespachoByID(db, despachoID)

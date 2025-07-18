@@ -182,10 +182,12 @@ func generarPDFEstructurado(pdf *gofpdf.Fpdf, tr func(string) string, despacho *
 	pdf.SetTextColor(0, 0, 0)
 
 	pdf.CellFormat(30, 8, tr("Código"), "1", 0, "C", true, 0, "")
-	pdf.CellFormat(70, 8, tr("Descripción"), "1", 0, "C", true, 0, "")
+	pdf.CellFormat(70, 8, tr("Nombre"), "1", 0, "C", true, 0, "")
 	pdf.CellFormat(20, 8, tr("Cantidad"), "1", 0, "C", true, 0, "")
 	pdf.CellFormat(35, 8, tr("Peso Unit (kg)"), "1", 0, "C", true, 0, "")
-	pdf.CellFormat(35, 8, tr("Peso Total (kg)"), "1", 1, "C", true, 0, "")
+	pdf.CellFormat(35, 8, tr("Peso Total (kg)"), "1", 0, "C", true, 0, "")
+	pdf.CellFormat(25, 8, tr("Precio Unit"), "1", 0, "C", true, 0, "")
+	pdf.CellFormat(35, 8, tr("Precio Total Neto"), "1", 1, "C", true, 0, "")
 
 	// 6. Filas de datos
 	pdf.SetFont("Arial", "", 9)
@@ -197,6 +199,8 @@ func generarPDFEstructurado(pdf *gofpdf.Fpdf, tr func(string) string, despacho *
 		pdf.CellFormat(20, 8, fmt.Sprintf("%d", item.Cantidad), "1", 0, "C", false, 0, "")
 		pdf.CellFormat(35, 8, fmt.Sprintf("%.2f", item.Peso), "1", 0, "R", false, 0, "")
 		pdf.CellFormat(35, 8, fmt.Sprintf("%.2f", item.PesoTotal), "1", 1, "R", false, 0, "")
+		pdf.CellFormat(25, 8, fmt.Sprintf("$%.2f", item.Precio), "1", 0, "R", false, 0, "")
+		pdf.CellFormat(25, 8, fmt.Sprintf("$%.2f", item.PrecioTotal), "1", 1, "R", false, 0, "")
 	}
 
 	// 7. Línea bajo la tabla
@@ -214,7 +218,7 @@ func generarPDFEstructurado(pdf *gofpdf.Fpdf, tr func(string) string, despacho *
 	startTotalsY := pdf.GetY()
 	rectX := 130.0
 	rectWidth := 70.0
-	numRows := 2
+	numRows := 3
 	rowHeight := 7.0
 	rectHeight := float64(numRows) * rowHeight
 
@@ -236,7 +240,22 @@ func generarPDFEstructurado(pdf *gofpdf.Fpdf, tr func(string) string, despacho *
 	pdf.CellFormat(45, rowHeight, "Total Peso (kg):", "", 0, "L", false, 0, "")
 	pdf.CellFormat(20, rowHeight, fmt.Sprintf("%.2f", despacho.TotalKg), "", 1, "R", false, 0, "")
 
-	pdf.Ln(20)
+	// Total Precio
+	pdf.SetX(rectX)
+	pdf.SetFont("Arial", "B", 10)
+	pdf.CellFormat(45, rowHeight, "Total Precio Neto:", "", 0, "L", false, 0, "")
+	pdf.CellFormat(20, rowHeight, fmt.Sprintf("$%.0f", despacho.TotalPrecio), "", 1, "R", false, 0, "")
+
+	// IVA 19%
+	pdf.SetX(rectX)
+	pdf.CellFormat(45, rowHeight, "IVA (19%):", "", 0, "L", false, 0, "")
+	pdf.CellFormat(20, rowHeight, fmt.Sprintf("$%.0f", despacho.IVA), "", 1, "R", false, 0, "")
+
+	// Total con IVA
+	totalConIVA := despacho.TotalPrecio + despacho.IVA
+	pdf.SetX(rectX)
+	pdf.CellFormat(45, rowHeight, "Total con IVA:", "", 0, "L", false, 0, "")
+	pdf.CellFormat(20, rowHeight, fmt.Sprintf("$%.0f", totalConIVA), "", 1, "R", false, 0, "")
 
 	// 9. Mensaje final
 	pdf.SetFont("Arial", "", 10)
