@@ -414,7 +414,198 @@ func volumenTotal(grupo []Unidad) float64 {
 	}
 	return total
 }
+// GetDespachoDistanciaByID obtiene un despacho con información completa para rutas
+func GetDespachoDistanciaByID(db *gorm.DB, id uint) (*modelos.DespachoDistanciaResponse, error) {
+	var despacho modelos.Despacho
 
+	// Hacer join con todas las tablas relacionadas
+	err := db.Preload("Cotizacion.Cliente").
+		Preload("Camion").
+		Preload("OrigenSucursal").
+		Preload("DestinoDirCliente.Cliente").
+		Preload("ProductosDespacho.Producto").
+		First(&despacho, id).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Calcular totales
+	cantidadItems := 0
+	totalKg := 0.0
+
+	for _, producto := range despacho.ProductosDespacho {
+		cantidadItems += producto.Cantidad
+		totalKg += float64(producto.Cantidad) * producto.Producto.Peso
+	}
+
+	// Construir la respuesta
+	response := &modelos.DespachoDistanciaResponse{
+		ID:                 despacho.ID,
+		CotizacionID:       despacho.CotizacionID,
+		CamionID:           despacho.CamionID,
+		Origen:             despacho.Origen,
+		Destino:            despacho.Destino,
+		FechaDespacho:      despacho.FechaDespacho,
+		ValorDespacho:      despacho.ValorDespacho,
+		CantidadItems:      cantidadItems,
+		TotalKg:            totalKg,
+		DistanciaCalculada: despacho.DistanciaCalculada,
+		TiempoEstimado:     despacho.TiempoEstimado,
+	}
+
+	// Agregar información de cotización si existe
+	if despacho.Cotizacion.ID != 0 {
+		response.Cotizacion = &modelos.CotizacionDistanciaResponse{
+			Estado: despacho.Cotizacion.Estado,
+		}
+
+		if despacho.Cotizacion.Cliente.Rut != "" {
+			response.Cotizacion.Cliente = &modelos.ClienteDistanciaResponse{
+				Nombre: despacho.Cotizacion.Cliente.Nombre,
+				Email:  despacho.Cotizacion.Cliente.Email,
+			}
+		}
+	}
+
+	// Agregar información del camión
+	if despacho.Camion.ID != 0 {
+		response.Camion = &modelos.CamionDistanciaResponse{
+			Patente: despacho.Camion.Patente,
+		}
+	}
+
+	// Agregar información de la sucursal origen
+	if despacho.OrigenSucursal.ID != 0 {
+		response.OrigenSucursal = &modelos.SucursalDistanciaResponse{
+			Nombre:    despacho.OrigenSucursal.Nombre,
+			Direccion: despacho.OrigenSucursal.Direccion,
+			Comuna:    despacho.OrigenSucursal.Comuna,
+			Ciudad:    despacho.OrigenSucursal.Ciudad,
+		}
+	}
+
+	// Agregar información del destino
+	if despacho.DestinoDirCliente.ID != 0 {
+		response.DestinoDirCliente = &modelos.DirClienteDistanciaResponse{
+			Direccion: despacho.DestinoDirCliente.Direccion,
+			Comuna:    despacho.DestinoDirCliente.Comuna,
+			Ciudad:    despacho.DestinoDirCliente.Ciudad,
+		}
+	}
+
+	return response, nil
+}
+
+// GetDespachosDistancia obtiene todos los despachos con información para rutas
+func GetDespachosDistancia(db *gorm.DB) ([]modelos.DespachoDistanciaResponse, error) {
+	var despachos []modelos.Despacho
+
+	// Obtener todos los despachos con sus relaciones
+	err := db.Preload("Cotizacion.Cliente").
+		Preload("Camion").
+		Preload("OrigenSucursal").
+		Preload("DestinoDirCliente.Cliente").
+		Preload("ProductosDespacho.Producto").
+		Find(&despachos).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	var response []modelos.DespachoDistanciaResponse
+
+	for _, despacho := range despachos {
+		// Calcular totales para cada despacho
+		cantidadItems := 0
+		totalKg := 0.0
+
+		for _, producto := range despacho.ProductosDespacho {
+			cantidadItems += producto.Cantidad
+			totalKg += float64(producto.Cantidad) * producto.Producto.Peso
+		}
+
+		// Construir respuesta individual
+		despachoResponse := modelos.DespachoDistanciaResponse{
+			ID:                 despacho.ID,
+			CotizacionID:       despacho.CotizacionID,
+			CamionID:           despacho.CamionID,
+			Origen:             despacho.Origen,
+			Destino:            despacho.Destino,
+			FechaDespacho:      despacho.FechaDespacho,
+			ValorDespacho:      despacho.ValorDespacho,
+			CantidadItems:      cantidadItems,
+			TotalKg:            totalKg,
+			DistanciaCalculada: despacho.DistanciaCalculada,
+			TiempoEstimado:     despacho.TiempoEstimado,
+		}
+
+		// Agregar información de cotización si existe
+		if despacho.Cotizacion.ID != 0 {
+			despachoResponse.Cotizacion = &modelos.CotizacionDistanciaResponse{
+				Estado: despacho.Cotizacion.Estado,
+			}
+
+			if despacho.Cotizacion.Cliente.Rut != "" {
+				despachoResponse.Cotizacion.Cliente = &modelos.ClienteDistanciaResponse{
+					Nombre: despacho.Cotizacion.Cliente.Nombre,
+					Email:  despacho.Cotizacion.Cliente.Email,
+				}
+			}
+		}
+
+		// Agregar información del camión
+		if despacho.Camion.ID != 0 {
+			despachoResponse.Camion = &modelos.CamionDistanciaResponse{
+				Patente: despacho.Camion.Patente,
+			}
+		}
+
+		// Agregar información de la sucursal origen
+		if despacho.OrigenSucursal.ID != 0 {
+			despachoResponse.OrigenSucursal = &modelos.SucursalDistanciaResponse{
+				Nombre:    despacho.OrigenSucursal.Nombre,
+				Direccion: despacho.OrigenSucursal.Direccion,
+				Comuna:    despacho.OrigenSucursal.Comuna,
+				Ciudad:    despacho.OrigenSucursal.Ciudad,
+			}
+		}
+
+		// Agregar información del destino
+		if despacho.DestinoDirCliente.ID != 0 {
+			despachoResponse.DestinoDirCliente = &modelos.DirClienteDistanciaResponse{
+				Direccion: despacho.DestinoDirCliente.Direccion,
+				Comuna:    despacho.DestinoDirCliente.Comuna,
+				Ciudad:    despacho.DestinoDirCliente.Ciudad,
+			}
+		}
+
+		response = append(response, despachoResponse)
+	}
+
+	return response, nil
+}
+
+// ActualizarDistanciaDespacho actualiza la distancia y tiempo de un despacho
+func ActualizarDistanciaDespacho(db *gorm.DB, id uint, distancia, tiempo string) error {
+	result := db.Model(&modelos.Despacho{}).
+		Where("id = ?", id).
+		Updates(map[string]interface{}{
+			"distancia_calculada": distancia,
+			"tiempo_estimado":     tiempo,
+		})
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return errors.New("despacho no encontrado")
+	}
+
+	return nil
+}
+  
 // GetFacturaElectronicaByDespachoID retorna una factura electrónica simulada para un despacho
 func GetFacturaElectronicaByDespachoID(db *gorm.DB, despachoID uint) (map[string]interface{}, error) {
 	ficha, err := GetDespachoByID(db, despachoID)

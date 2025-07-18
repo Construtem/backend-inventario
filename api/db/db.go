@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -26,7 +27,7 @@ func ConectarDB() (*gorm.DB, error) {
 	gormLogger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags),
 		logger.Config{
-			LogLevel: logger.Info,
+			LogLevel: logger.Error,
 			Colorful: true,
 		},
 	)
@@ -37,6 +38,15 @@ func ConectarDB() (*gorm.DB, error) {
 	if err != nil {
 		log.Fatalf("Error al conectar a la base de datos: %v", err)
 	}
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatalf("Error al obtener la conexion de la base de datos: %v", err)
+	}
+
+	sqlDB.SetMaxOpenConns(5)                  // Número máximo de conexiones abiertas
+	sqlDB.SetMaxIdleConns(2)                  // Núme	ro máximo de conexiones inactivas
+	sqlDB.SetConnMaxLifetime(time.Minute * 5) // Tiempo máximo de vida de una conexión
 
 	return db, nil
 }

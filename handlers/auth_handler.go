@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"backend-inventario/services" // cambia según tu nombre real del módulo
+	"github.com/gin-gonic/gin"
 )
 
 func VerifyToken(c *gin.Context) {
@@ -31,7 +31,6 @@ func VerifyToken(c *gin.Context) {
 	name := token.Claims["name"].(string)
 	uid := token.Claims["user_id"].(string)
 	picture := token.Claims["picture"].(string)
-
 
 	c.JSON(http.StatusOK, gin.H{
 		"name":     name,
