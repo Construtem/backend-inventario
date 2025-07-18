@@ -9,7 +9,11 @@ import (
 // GetStockSucursal obtiene todos los registros de stock por sucursal
 func GetStockSucursal(db *gorm.DB) ([]modelos.StockSucursal, error) {
 	var stocks []modelos.StockSucursal
-	if err := db.Preload("Producto").Preload("Sucursal").Find(&stocks).Error; err != nil {
+	if err := db.
+		Preload("Producto.Categoria").
+		Preload("Producto.Proveedor").
+		Preload("Sucursal").
+		Find(&stocks).Error; err != nil {
 		return nil, err
 	}
 	return stocks, nil
@@ -18,7 +22,12 @@ func GetStockSucursal(db *gorm.DB) ([]modelos.StockSucursal, error) {
 // GetStockSucursalByID obtiene un registro de stock por su ID
 func GetStockSucursalByID(db *gorm.DB, sucursalID uint, sku string) (*modelos.StockSucursal, error) {
 	var stock modelos.StockSucursal
-	if err := db.Where("sucursal_id = ? AND sku = ?", sucursalID, sku).Preload("Producto").Preload("Sucursal").First(&stock).Error; err != nil {
+	if err := db.
+		Where("sucursal_id = ? AND sku = ?", sucursalID, sku).
+		Preload("Producto.Categoria").
+		Preload("Producto.Proveedor").
+		Preload("Sucursal").
+		First(&stock).Error; err != nil {
 		return nil, err
 	}
 	return &stock, nil
