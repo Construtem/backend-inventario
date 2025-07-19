@@ -14,7 +14,10 @@ func GetDirClientesHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		dirClientes, err := Controllers.GetDirCliente(db)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener direcciones de clientes", "details": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "Hubo un problema al obtener las direcciones de clientes.",
+				"details": err.Error(),
+			})
 			return
 		}
 		c.JSON(http.StatusOK, dirClientes)
@@ -26,13 +29,13 @@ func GetDirClienteByIDHandler(db *gorm.DB) gin.HandlerFunc {
 		idStr := c.Param("id")
 		id, err := strconv.ParseUint(idStr, 10, 32)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalido"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "El ID proporcionado no es válido."})
 			return
 		}
 
 		dirCliente, err := Controllers.GetDirClienteByID(db, uint(id))
 		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Dirección de cliente no encontrada", "details": err.Error()})
+			c.JSON(http.StatusNotFound, gin.H{"error": "No se encontró una dirección de cliente con el ID especificado."})
 			return
 		}
 		c.JSON(http.StatusOK, dirCliente)
@@ -43,11 +46,17 @@ func CreateDirClienteHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var nueva modelos.DirCliente
 		if err := c.ShouldBindJSON(&nueva); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos", "details": err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "Los datos enviados para la dirección del cliente no son válidos.",
+				"details": err.Error(),
+			})
 			return
 		}
 		if err := Controllers.CreateDirCliente(db, &nueva); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al crear dirección de cliente", "details": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "No se pudo registrar la dirección del cliente.",
+				"details": err.Error(),
+			})
 			return
 		}
 		c.JSON(http.StatusCreated, nueva)
