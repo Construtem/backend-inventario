@@ -6,7 +6,7 @@ type Producto struct {
 	SKU         string  `gorm:"primaryKey;size:20" json:"sku"`
 	Nombre      string  `gorm:"size:100;not null" json:"nombre"`
 	Descripcion string  `gorm:"type:text" json:"descripcion"`
-	ProveedorID uint    `gorm:"primaryKey;column:proveedor_id" json:"proveedor_id"`
+	ProveedorID uint    `gorm:"not null" json:"proveedor_id"`
 	Peso        float64 `gorm:"type:numeric(10,2);not null" json:"peso"`
 	Largo       float64 `gorm:"type:numeric(10,2);not null" json:"largo"`
 	Ancho       float64 `gorm:"type:numeric(10,2);not null" json:"ancho"`
@@ -42,7 +42,7 @@ func (Proveedor) TableName() string {
 
 type StockProveedor struct {
 	ProveedorID  uint      `gorm:"primaryKey;column:proveedor_id" json:"proveedor_id"`
-	ProductoID   string    `gorm:"primaryKey;size:20;column:producto_id" json:"producto_id"`
+	ProductoID   string    `gorm:"primaryKey;column:sku" json:"sku"`
 	Stock        int       `gorm:"not null" json:"stock"`
 	FechaIngreso time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"fecha_ingreso"`
 
