@@ -129,6 +129,7 @@ func CalcularDespachoHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		type Req struct {
 			CotizacionID uint `json:"cotizacion_id"`
+			DirClienteID uint `json:"dir_cliente_id"`
 		}
 
 		var req Req
@@ -141,7 +142,7 @@ func CalcularDespachoHandler(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		despacho, err := Controllers.CalcularDespacho(db, req.CotizacionID)
+		despacho, err := Controllers.CalcularDespacho(db, req.CotizacionID, req.DirClienteID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error":    "Error interno",

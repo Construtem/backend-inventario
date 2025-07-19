@@ -41,6 +41,7 @@ func main() {
 		os.Getenv("FRONT_VENTAS_URL"),      // URL del frontend de ventas
 		os.Getenv("FRONT_INVENTARIO_URL"),  // URL del frontend de inventario
 		os.Getenv("FRONT_FACTURACION_URL"), // URL del frontend de facturación
+		os.Getenv("BACK_FACTURACION_URL"), // URL del backend de facturación
 	}
 
 	// Agregar origen de desarrollo si está configurado
