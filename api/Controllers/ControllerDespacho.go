@@ -195,10 +195,11 @@ func DeleteDespacho(db *gorm.DB, id uint) error {
 	return db.Delete(&modelos.Despacho{}, id).Error
 }
 
-func CalcularDespacho(db *gorm.DB, cotID uint) ([]modelos.Despacho, error) {
+// para devolver el modelo despacho creado hay que cambiar los 0 de los return 0,err por un nil, a parte de la firma de la funcion
+func CalcularDespacho(db *gorm.DB, cotID uint, dirClienteID uint) (float64, error) {
 	// Se eliminan previamente los despachos existentes para esta cotización (si los hay)
 	if err := db.Where("cotizacion_id = ?", cotID).Delete(&modelos.Despacho{}).Error; err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	// Se buscan los ítems de la cotización con sus productos y la cotización en sí
@@ -209,19 +210,19 @@ func CalcularDespacho(db *gorm.DB, cotID uint) ([]modelos.Despacho, error) {
 		Where("cotizacion_id = ?", cotID).
 		Find(&items).Error
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 	// 🚨 Si no hay productos asociados a la cotización, se devuelve un error
 	if len(items) == 0 {
-		return nil, errors.New("no hay productos en la cotización")
+		return 0, errors.New("no hay productos en la cotización")
 	}
 
 	var tiposDisponibles []modelos.TipoCamion
 	if err := db.Order("peso_maximo ASC").Find(&tiposDisponibles).Error; err != nil {
-		return nil, err
+		return 0, err
 	}
 	if len(tiposDisponibles) == 0 {
-		return nil, errors.New("no hay tipos de camión disponibles")
+		return 0, errors.New("no hay tipos de camión disponibles")
 	}
 
 	var unidades []Unidad
@@ -239,10 +240,10 @@ func CalcularDespacho(db *gorm.DB, cotID uint) ([]modelos.Despacho, error) {
 		}
 	}
 
-	// 🏠 Se obtiene la dirección de destino del cliente usando el RUT presente en la cotización
+	// 🏠 Se obtiene la dirección de destino del cliente
 	var destino modelos.DirCliente
-	if err := db.Where("rut_cliente = ?", items[0].Cotizacion.RutCliente).First(&destino).Error; err != nil {
-		return nil, err
+	if err := db.First(&destino, dirClienteID).Error; err != nil {
+		return 0, fmt.Errorf("no se encontró la dirección del cliente con ID %d", dirClienteID)
 	}
 
 	// 🧩 Agrupamiento de unidades en despachos según capacidad de camión (peso y volumen)
@@ -286,7 +287,7 @@ func CalcularDespacho(db *gorm.DB, cotID uint) ([]modelos.Despacho, error) {
 	// Obtener distancia
 	distanciaKm, err := obtenerDistanciaEnKm(origenStr, destinoStr)
 	if err != nil {
-		return nil, fmt.Errorf("error al obtener distancia: %v", err)
+		return 0, fmt.Errorf("error al obtener distancia: %v", err)
 	}
 
 	// Calcular costo total de envío
@@ -304,12 +305,12 @@ func CalcularDespacho(db *gorm.DB, cotID uint) ([]modelos.Despacho, error) {
 			}
 		}
 		if tipoCamionID == 0 {
-			return nil, errors.New("no hay tipo de camión disponible para un grupo de productos")
+			return 0, errors.New("no hay tipo de camión disponible para un grupo de productos")
 		}
 
 		var camion modelos.Camion
 		if err := db.Where("tipo_id = ? AND activo = true", tipoCamionID).First(&camion).Error; err != nil {
-			return nil, fmt.Errorf("no hay camiones disponibles del tipo %d", tipoCamionID)
+			return 0, fmt.Errorf("no hay camiones disponibles del tipo %d", tipoCamionID)
 		}
 
 		// Crear el despacho con la información del grupo
@@ -324,7 +325,7 @@ func CalcularDespacho(db *gorm.DB, cotID uint) ([]modelos.Despacho, error) {
 		}
 
 		if err := db.Create(&despacho).Error; err != nil {
-			return nil, err
+			return 0, err
 		}
 
 		// 🧮 Se agrupan las unidades por SKU para registrar la cantidad total por producto en el despacho
@@ -341,7 +342,7 @@ func CalcularDespacho(db *gorm.DB, cotID uint) ([]modelos.Despacho, error) {
 				Cantidad:   cantidad,
 			}
 			if err := db.Create(&prod).Error; err != nil {
-				return nil, err
+				return 0, err
 			}
 		}
 
@@ -349,7 +350,7 @@ func CalcularDespacho(db *gorm.DB, cotID uint) ([]modelos.Despacho, error) {
 		despachos = append(despachos, despacho)
 	}
 
-	return despachos, nil
+	return costoTotalEnvio, nil
 }
 
 func GetDespachosPorCotizacion(db *gorm.DB, cotID uint) ([]modelos.Despacho, error) {
@@ -414,6 +415,7 @@ func volumenTotal(grupo []Unidad) float64 {
 	}
 	return total
 }
+
 // GetDespachoDistanciaByID obtiene un despacho con información completa para rutas
 func GetDespachoDistanciaByID(db *gorm.DB, id uint) (*modelos.DespachoDistanciaResponse, error) {
 	var despacho modelos.Despacho
@@ -605,7 +607,7 @@ func ActualizarDistanciaDespacho(db *gorm.DB, id uint, distancia, tiempo string)
 
 	return nil
 }
-  
+
 // GetFacturaElectronicaByDespachoID retorna una factura electrónica simulada para un despacho
 func GetFacturaElectronicaByDespachoID(db *gorm.DB, despachoID uint) (map[string]interface{}, error) {
 	ficha, err := GetDespachoByID(db, despachoID)
