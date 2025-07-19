@@ -24,6 +24,7 @@ type DespachoConTotales struct {
 	TotalKg           float64 `json:"total_kg"`
 	TotalPrecio       float64 `json:"total_precio"`
 	IVA               float64
+	ValorDespacho     float64                     `json:"valor_despacho"`
 	ProductosDespacho []ProductoDespachoDetallado `json:"items"`
 }
 
