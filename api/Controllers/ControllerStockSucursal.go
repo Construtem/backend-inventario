@@ -9,6 +9,8 @@ import (
 // GetStockSucursal obtiene todos los registros de stock por sucursal
 func GetStockSucursal(db *gorm.DB) ([]modelos.StockSucursal, error) {
 	var stocks []modelos.StockSucursal
+
+	// Obtener todos los registros de stock
 	if err := db.
 		Preload("Producto.Categoria").
 		Preload("Producto.Proveedor").
@@ -16,6 +18,24 @@ func GetStockSucursal(db *gorm.DB) ([]modelos.StockSucursal, error) {
 		Find(&stocks).Error; err != nil {
 		return nil, err
 	}
+	// Verificar y actualizar el estado de cada producto
+	for _, stock := range stocks {
+		nuevoEstado := false
+		if stock.Cantidad > 0 {
+			nuevoEstado = true
+		}
+
+		// Si el estado es distinto, actualizar en DB
+		if stock.Producto.Estado != nuevoEstado {
+			err := db.Model(&modelos.Producto{}).
+				Where("sku = ?", stock.Producto.SKU).
+				Update("estado", nuevoEstado).Error
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	return stocks, nil
 }
 
