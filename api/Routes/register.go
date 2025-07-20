@@ -35,6 +35,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB) {
 	// Rutas para Stock por Sucursal
 	api.GET("/stock-sucursal", Handlers.GetStockSucursalHandler(db))
 	api.GET("/stock-sucursal/:sucursal_id/:sku", Handlers.GetStockSucursalByIDHandler(db))
+	api.GET("/stock-sucursal/productos-inactivos", Handlers.GetProductosInactivosHandler(db))
 	api.POST("/stock-sucursal", Handlers.CreateStockSucursalHandler(db))
 	api.PUT("/stock-sucursal/:sucursal_id/:sku", Handlers.UpdateStockSucursalHandler(db))
 	api.DELETE("/stock-sucursal/:sucursal_id/:sku", Handlers.DeleteStockSucursalHandler(db))
