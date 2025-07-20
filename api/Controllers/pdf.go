@@ -216,7 +216,7 @@ func generarPDFEstructurado(pdf *gofpdf.Fpdf, tr func(string) string, despacho *
 	pdf.Cell(0, 5, tr(fmt.Sprintf("Camión: %s", despacho.Camion.Patente)))
 
 	pdf.SetXY(100, currentY+20)
-	pdf.Cell(0, 5, tr(fmt.Sprintf("Estado: %s", despacho.Cotizacion.Estado)))
+	pdf.Cell(0, 5, tr(fmt.Sprintf("Estado: %s", despacho.Estado)))
 
 	// Mover el cursor después del bloque
 	pdf.SetY(currentY + 30)
