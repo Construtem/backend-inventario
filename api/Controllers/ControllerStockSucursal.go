@@ -69,3 +69,24 @@ func UpdateStockSucursal(db *gorm.DB, sku string, sucursalID uint, actualizado *
 func DeleteStockSucursal(db *gorm.DB, sku string, sucursalID uint) error {
 	return db.Where("sku = ? AND sucursal_id = ?", sku, sucursalID).Delete(&modelos.StockSucursal{}).Error
 }
+
+// Estructura para representar productos inactivos por sucursal
+type ProductoInactivo struct {
+	SKU      string `json:"sku"`
+	Nombre   string `json:"nombre"`
+	Sucursal string `json:"sucursal"`
+}
+
+// Obtiene los productos inactivos por sucursal
+func GetProductosInactivos(db *gorm.DB) ([]ProductoInactivo, error) {
+
+	var resultados []ProductoInactivo
+	err := db.Table("productos_sucursal").
+		Select("productos.sku, productos.nombre, sucursales.nombre AS sucursal").
+		Joins("JOIN productos ON productos_sucursal.producto_id = productos.id").
+		Joins("JOIN sucursales ON productos_sucursal.sucursal_id = sucursales.id").
+		Where("productos.estado = ?", false).
+		Scan(&resultados).Error
+
+	return resultados, err
+}

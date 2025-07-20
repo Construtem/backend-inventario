@@ -96,3 +96,32 @@ func DeleteStockSucursalHandler(db *gorm.DB) gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{"message": "Registro de stock eliminado correctamente"})
 	}
 }
+
+// Obtiene los productos inactivos
+func GetProductosInactivosHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		type ProductoInactivo struct {
+			SKU      string `json:"sku"`
+			Nombre   string `json:"nombre"`
+			Sucursal string `json:"sucursal"`
+		}
+
+		var resultados []ProductoInactivo
+
+		err := db.Table("stock_sucursal").
+			Select("productos.sku, productos.nombre, sucursales.nombre AS sucursal").
+			Joins("JOIN productos ON stock_sucursal.sku = productos.sku").
+			Joins("JOIN sucursales ON stock_sucursal.sucursal_id = sucursales.id").
+			Where("productos.estado = ?", false).
+			Scan(&resultados).Error
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "Error al obtener productos inactivos",
+				"details": err.Error(), // <-- Agrega esta línea
+			})
+			return
+		}
+		c.JSON(http.StatusOK, resultados)
+	}
+}
