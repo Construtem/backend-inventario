@@ -18,8 +18,8 @@ import (
 )
 
 func main() {
-	// En producción (Kubernetes), solo intenta cargar .env en local, pero nunca detengas la app si no existe
-	config.LoadEnv() // Esto ya maneja el log si no existe .env
+	// Cargar variables de entorno
+	config.LoadEnv()
 
 	// Conectar a la base de datos
 	log.Printf("Conectando a la base de datos %s...", os.Getenv("DB_NAME"))
@@ -29,41 +29,34 @@ func main() {
 	}
 	fmt.Println("Conexión a la base de datos exitosa")
 
+	// Inicializar Firebase
 	services.InitFirebase()
 
-	//	modelos.MigrarTablas(database)
-	//	fmt.Println("Migración de tablas exitosa")
-
+	// Crear router
 	router := gin.Default()
 
-	// Configurando CORS
-	allowedOrigins := []string{
-		os.Getenv("FRONT_VENTAS_URL"),      // URL del frontend de ventas
-		os.Getenv("FRONT_INVENTARIO_URL"),  // URL del frontend de inventario
-		os.Getenv("FRONT_FACTURACION_URL"), // URL del frontend de facturación
-		os.Getenv("BACK_FACTURACION_URL"), // URL del backend de facturación
-	}
-
-	// Agregar origen de desarrollo si está configurado
-	if devOrigin := os.Getenv("ALLOWED_ORIGINS"); devOrigin != "" {
-		allowedOrigins = append(allowedOrigins, devOrigin)
-	}
-
+	// Configurar CORS para desarrollo (solo frontend local)
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     allowedOrigins,
+		AllowOrigins:     []string{"http://localhost:3000"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
-	router.POST("/auth/verify", handlers.VerifyToken) //Ruta para autenticacion firebase
+
+	// Ruta para verificación de autenticación Firebase
+	router.POST("/auth/verify", handlers.VerifyToken)
+
+	// Registrar rutas del backend
 	Routes.RegisterRoutes(router, database)
 
+	// Puerto por defecto
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080" // Puerto alternativo
+		port = "8080"
 	}
 
+	// Iniciar servidor
 	if err := router.Run(":" + port); err != nil {
 		log.Fatalf("Error al iniciar el servidor: %v", err)
 	}

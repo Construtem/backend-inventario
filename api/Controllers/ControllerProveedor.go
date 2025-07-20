@@ -33,7 +33,12 @@ func UpdateProveedor(db *gorm.DB, id uint, actualizado *modelos.Proveedor) (*mod
 		return nil, errors.New("proveedor no encontrado")
 	}
 
-	existente.Marca = actualizado.Marca
+	 // Actualizar todos los campos
+    existente.Marca = actualizado.Marca
+    existente.Email = actualizado.Email
+    existente.Telefono = actualizado.Telefono
+    existente.Direccion = actualizado.Direccion
+	
 	if err := db.Save(&existente).Error; err != nil {
 		return nil, err
 	}

@@ -217,6 +217,10 @@ type Despacho struct {
 	OrigenSucursal    Sucursal            `gorm:"foreignKey:Origen;references:ID;constraint:OnDelete:CASCADE" json:"origen_sucursal"`
 	DestinoDirCliente DirCliente          `gorm:"foreignKey:Destino;references:ID;constraint:OnDelete:CASCADE" json:"destino_dir_cliente"`
 	ProductosDespacho []ProductosDespacho `gorm:"foreignKey:DespachoID;references:ID;constraint:OnDelete:CASCADE" json:"productos"`
+
+
+	// ⚠️ Agrega este campo:
+	IVA float64
 }
 
 func (Despacho) TableName() string {
@@ -230,6 +234,8 @@ type ProductosDespacho struct {
 
 	Despacho Despacho `gorm:"foreignKey:DespachoID;references:ID;constraint:OnDelete:CASCADE" json:"despacho"`
 	Producto Producto `gorm:"foreignKey:ProductoID;references:SKU;constraint:OnDelete:CASCADE" json:"producto"`
+	IVA      float64
+
 }
 
 func (ProductosDespacho) TableName() string {
@@ -253,6 +259,8 @@ type DespachoDistanciaResponse struct {
 	Camion             *CamionDistanciaResponse     `json:"camion,omitempty"`
 	OrigenSucursal     *SucursalDistanciaResponse   `json:"origen_sucursal,omitempty"`
 	DestinoDirCliente  *DirClienteDistanciaResponse `json:"destino_dir_cliente,omitempty"`
+		// ⚠️ Agrega este campo:
+	IVA float64
 }
 
 // CotizacionDistanciaResponse es la estructura simplificada de cotización para rutas
