@@ -270,13 +270,18 @@ func generarPDFEstructurado(pdf *gofpdf.Fpdf, tr func(string) string, despacho *
 		// Bordes invisibles
 		pdf.SetDrawColor(255, 255, 255)
 
-		pdf.CellFormat(15, 8, tr(item.SKU), "", 0, "C", true, 0, "")
-		pdf.CellFormat(55, 8, tr(item.Nombre), "", 0, "L", true, 0, "")
+		pdf.CellFormat(15, 8, tr(item.Producto.SKU), "", 0, "C", true, 0, "")
+		pdf.CellFormat(55, 8, tr(item.Producto.Nombre), "", 0, "L", true, 0, "")
 		pdf.CellFormat(15, 8, fmt.Sprintf("%d", item.Cantidad), "", 0, "C", true, 0, "")
-		pdf.CellFormat(25, 8, fmt.Sprintf("%.2f", item.Peso), "", 0, "R", true, 0, "")
-		pdf.CellFormat(25, 8, fmt.Sprintf("%.2f", item.PesoTotal), "", 0, "R", true, 0, "")
-		pdf.CellFormat(25, 8, fmt.Sprintf("$%.2f", item.Precio), "", 0, "R", true, 0, "")
-		pdf.CellFormat(30, 8, fmt.Sprintf("$%.2f", item.PrecioTotal), "", 1, "R", true, 0, "")
+		pdf.CellFormat(25, 8, fmt.Sprintf("%.2f", item.Producto.Peso), "", 0, "R", true, 0, "")
+
+		PesoTotal := item.Producto.Peso * float64(item.Cantidad)
+		pdf.CellFormat(25, 8, fmt.Sprintf("%.2f", PesoTotal), "", 0, "R", true, 0, "")
+
+		pdf.CellFormat(25, 8, fmt.Sprintf("$%.2f", item.Producto.Precio), "", 0, "R", true, 0, "")
+
+		PrecioTotal := item.Producto.Precio * float64(item.Cantidad)
+		pdf.CellFormat(30, 8, fmt.Sprintf("$%.2f", PrecioTotal), "", 1, "R", true, 0, "")
 	}
 
 	// 7. Línea bajo la tabla
