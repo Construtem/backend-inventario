@@ -50,20 +50,26 @@ func CreateStockProveedorHandler(db *gorm.DB) gin.HandlerFunc {
 }
 
 func UpdateStockProveedorHandler(db *gorm.DB) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		proveedorID, _ := strconv.Atoi(c.Param("proveedor_id"))
-		productoID := c.Param("producto_id")
-		var stock modelos.StockProveedor
-		if err := c.ShouldBindJSON(&stock); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos", "details": err.Error()})
-			return
-		}
-		if err := Controllers.UpdateStockProveedor(db, uint(proveedorID), productoID, stock); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al actualizar stock de proveedor", "details": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"message": "Stock actualizado correctamente"})
-	}
+    return func(c *gin.Context) {
+        proveedorID, _ := strconv.Atoi(c.Param("proveedor_id"))
+        sku := c.Param("sku") // <-- aquí el cambio
+        var stock modelos.StockProveedor
+        if err := c.ShouldBindJSON(&stock); err != nil {
+            c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos", "details": err.Error()})
+            return
+        }
+        if err := Controllers.UpdateStockProveedor(db, uint(proveedorID), sku, stock); err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al actualizar stock de proveedor", "details": err.Error()})
+            return
+        }
+        var updated modelos.StockProveedor
+        if err := db.Preload("Producto").Preload("Proveedor").
+            First(&updated, "proveedor_id = ? AND sku = ?", proveedorID, sku).Error; err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo obtener el stock actualizado"})
+            return
+        }
+        c.JSON(http.StatusOK, updated)
+    }
 }
 
 func DeleteStockProveedorHandler(db *gorm.DB) gin.HandlerFunc {
