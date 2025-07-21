@@ -9,7 +9,7 @@ import (
 	"backend-inventario/api/Routes"
 	"backend-inventario/api/db"
 	"backend-inventario/config"
-	"backend-inventario/handlers"
+	Handlers "backend-inventario/handlers"
 	"backend-inventario/services"
 
 	"github.com/gin-contrib/cors"
@@ -50,7 +50,7 @@ func main() {
 	}))
 
 	// Ruta para verificación de autenticación Firebase
-	router.POST("/auth/verify", handlers.VerifyToken)
+	router.POST("/auth/verify", Handlers.VerifyToken(database))
 
 	// Registrar rutas del backend
 	Routes.RegisterRoutes(router, database)
