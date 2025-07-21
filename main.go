@@ -37,11 +37,12 @@ func main() {
 
 	// Configurar CORS para PRODUCCION
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{
+		AllowOrigins: []string{
 			os.Getenv("FRONT_INVENTARIO_URL"),
 			os.Getenv("FRONT_VENTAS_URL"),
 			os.Getenv("FRONT_FACTURACION_URL"),
-			os.Getenv("BACK_FACTURACION_URL")},
+			//os.Getenv("BACK_FACTURACION_URL")
+		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
