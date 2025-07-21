@@ -164,7 +164,7 @@ func (Cotizacion) TableName() string {
 
 type CotizacionItem struct {
 	CotizacionID uint   `gorm:"primaryKey;column:cotizacion_id" json:"cotizacion_id"`
-	ProductoID   string `gorm:"primaryKey;size:20;column:producto_id" json:"producto_id"`
+	ProductoID   string `gorm:"primaryKey;size:20;column:sku" json:"producto_id"`
 	SucursalID   uint   `gorm:"primaryKey;column:sucursal_id" json:"sucursal_id"`
 	Cantidad     int    `gorm:"not null" json:"cantidad"`
 
@@ -201,26 +201,20 @@ func (Camion) TableName() string {
 }
 
 type Despacho struct {
-	ID                 uint      `gorm:"primaryKey" json:"id"`
-	CotizacionID       uint      `gorm:"column:cotizacion_id;not null" json:"cotizacion_id"`
-	CamionID           uint      `gorm:"column:camion_id;not null" json:"camion_id"`
-	Origen             uint      `gorm:"not null" json:"origen"`  // FK a sucursales.id
-	Destino            uint      `gorm:"not null" json:"destino"` // FK a dir_cliente.id
-	FechaDespacho      time.Time `gorm:"not null" json:"fecha_despacho"`
-	ValorDespacho      float64   `gorm:"type:numeric(10,2);not null" json:"valor_despacho"`
-	Estado             string    `gorm:"size:20;not null;default:'pendiente'" json:"estado"`
-	DistanciaCalculada *string   `gorm:"size:50" json:"distancia_calculada,omitempty"`
-	TiempoEstimado     *string   `gorm:"size:50" json:"tiempo_estimado,omitempty"`
+	ID            uint      `gorm:"primaryKey" json:"id"`
+	CotizacionID  uint      `gorm:"column:cotizacion_id;not null" json:"cotizacion_id"`
+	CamionID      uint      `gorm:"column:camion_id;not null" json:"camion_id"`
+	Origen        uint      `gorm:"not null" json:"origen"`  // FK a sucursales.id
+	Destino       uint      `gorm:"not null" json:"destino"` // FK a dir_cliente.id
+	FechaDespacho time.Time `gorm:"not null" json:"fecha_despacho"`
+	ValorDespacho float64   `gorm:"type:numeric(10,2);not null" json:"valor_despacho"`
+	Estado        string    `gorm:"size:20;not null;default:'pendiente'" json:"estado"`
 
 	Cotizacion        Cotizacion          `gorm:"foreignKey:CotizacionID;references:ID;constraint:OnDelete:CASCADE" json:"cotizacion"`
 	Camion            Camion              `gorm:"foreignKey:CamionID;references:ID;constraint:OnDelete:CASCADE" json:"camion"`
 	OrigenSucursal    Sucursal            `gorm:"foreignKey:Origen;references:ID;constraint:OnDelete:CASCADE" json:"origen_sucursal"`
 	DestinoDirCliente DirCliente          `gorm:"foreignKey:Destino;references:ID;constraint:OnDelete:CASCADE" json:"destino_dir_cliente"`
 	ProductosDespacho []ProductosDespacho `gorm:"foreignKey:DespachoID;references:ID;constraint:OnDelete:CASCADE" json:"productos"`
-
-
-	// ⚠️ Agrega este campo:
-	IVA float64
 }
 
 func (Despacho) TableName() string {
@@ -234,8 +228,6 @@ type ProductosDespacho struct {
 
 	Despacho Despacho `gorm:"foreignKey:DespachoID;references:ID;constraint:OnDelete:CASCADE" json:"despacho"`
 	Producto Producto `gorm:"foreignKey:ProductoID;references:SKU;constraint:OnDelete:CASCADE" json:"producto"`
-	IVA      float64
-
 }
 
 func (ProductosDespacho) TableName() string {
@@ -259,8 +251,6 @@ type DespachoDistanciaResponse struct {
 	Camion             *CamionDistanciaResponse     `json:"camion,omitempty"`
 	OrigenSucursal     *SucursalDistanciaResponse   `json:"origen_sucursal,omitempty"`
 	DestinoDirCliente  *DirClienteDistanciaResponse `json:"destino_dir_cliente,omitempty"`
-		// ⚠️ Agrega este campo:
-	IVA float64
 }
 
 // CotizacionDistanciaResponse es la estructura simplificada de cotización para rutas
