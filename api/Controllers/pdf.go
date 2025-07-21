@@ -324,10 +324,10 @@ func generarPDFEstructurado(pdf *gofpdf.Fpdf, tr func(string) string, despacho *
 	// IVA 19%
 	pdf.SetX(rectX)
 	pdf.CellFormat(45, rowHeight, "IVA (19%):", "", 0, "L", false, 0, "")
-	pdf.CellFormat(20, rowHeight, fmt.Sprintf("$%.0f", despacho.IVA), "", 1, "R", false, 0, "")
+	pdf.CellFormat(20, rowHeight, fmt.Sprintf("$%.0f", despacho.TotalPrecio*0.19), "", 1, "R", false, 0, "")
 
 	// Total con IVA
-	totalConIVA := despacho.TotalPrecio + despacho.IVA
+	totalConIVA := despacho.TotalPrecio + (despacho.TotalPrecio * 0.19)
 
 	// Valor del Despacho
 	ValorDespacho := despacho.ValorDespacho

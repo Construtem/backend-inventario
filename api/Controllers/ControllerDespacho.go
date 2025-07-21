@@ -4,6 +4,7 @@ import (
 	modelos "backend-inventario/api/Models"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"encoding/json"
@@ -24,7 +25,11 @@ type DespachoConTotales struct {
 	TotalKg           float64                     `json:"total_kg"`
 	TotalPrecio       float64                     `json:"total_precio"`
 	ProductosDespacho []ProductoDespachoDetallado `json:"items"`
-	    IVA               float64 // ← AGREGA ESTA LÍNEA
+	IVA               float64                     `json:"iva"`
+	ValorDespacho     float64                     `json:"valor_despacho"`
+
+	DistanciaKM    float64 `json:"distancia_km"`
+	TiempoEstimado float64 `json:"tiempo_estimado"` // en minutos
 }
 
 // Se define una estructura interna para manejar cada unidad de producto
@@ -125,68 +130,70 @@ func GetDespachos(db *gorm.DB) ([]DespachoConTotales, error) {
 			CantidadItems:     totalItems,
 			TotalKg:           totalKg,
 			TotalPrecio:       totalPrecio,
+			IVA:               totalPrecio * 0.19, // Calcula el IVA aquí
 			ProductosDespacho: productosDetallados,
+			ValorDespacho:     despacho.ValorDespacho,
 		})
 	}
 	return resultado, nil
 }
 
 func GetDespachoByID(db *gorm.DB, id uint) (*DespachoConTotales, error) {
-    var despacho modelos.Despacho
-    err := db.
-        Preload("Cotizacion.Cliente.Tipo").
-        Preload("Cotizacion.Usuario.Rol").
-        Preload("Camion.Tipo").
-        Preload("OrigenSucursal.Tipo").
-        Preload("DestinoDirCliente.Cliente.Tipo").
-        Preload("ProductosDespacho.Producto.Proveedor").
-        First(&despacho, "id = ?", id).Error
-    if err != nil {
-        return nil, err
-    }
+	var despacho modelos.Despacho
+	err := db.
+		Preload("Cotizacion.Cliente.Tipo").
+		Preload("Cotizacion.Usuario.Rol").
+		Preload("Camion.Tipo").
+		Preload("OrigenSucursal.Tipo").
+		Preload("DestinoDirCliente.Cliente.Tipo").
+		Preload("ProductosDespacho.Producto.Proveedor").
+		First(&despacho, "id = ?", id).Error
+	if err != nil {
+		return nil, err
+	}
 
-    var totalKg float64
-    var totalItems int
-    var totalPrecio float64
-    var productosDetallados []ProductoDespachoDetallado
+	var totalKg float64
+	var totalItems int
+	var totalPrecio float64
+	var productosDetallados []ProductoDespachoDetallado
 
-    for _, p := range despacho.ProductosDespacho {
-        totalItems += p.Cantidad
-        totalKg += float64(p.Cantidad) * p.Producto.Peso
-        totalPrecio += float64(p.Cantidad) * p.Producto.Precio
+	for _, p := range despacho.ProductosDespacho {
+		totalItems += p.Cantidad
+		totalKg += float64(p.Cantidad) * p.Producto.Peso
+		totalPrecio += float64(p.Cantidad) * p.Producto.Precio
 
-        detallado := ProductoDespachoDetallado{
-            DespachoID:  p.DespachoID,
-            ProductoID:  p.ProductoID,
-            SKU:         p.Producto.SKU,
-            Nombre:      p.Producto.Nombre,
-            Descripcion: p.Producto.Descripcion,
-            Cantidad:    p.Cantidad,
-            Peso:        p.Producto.Peso,
-            Alto:        p.Producto.Alto,
-            Ancho:       p.Producto.Ancho,
-            Largo:       p.Producto.Largo,
-            Precio:      p.Producto.Precio,
-            PesoTotal:   p.Producto.Peso * float64(p.Cantidad),
-            PrecioTotal: p.Producto.Precio * float64(p.Cantidad),
-        }
-        productosDetallados = append(productosDetallados, detallado)
-    }
+		detallado := ProductoDespachoDetallado{
+			DespachoID:  p.DespachoID,
+			ProductoID:  p.ProductoID,
+			SKU:         p.Producto.SKU,
+			Nombre:      p.Producto.Nombre,
+			Descripcion: p.Producto.Descripcion,
+			Cantidad:    p.Cantidad,
+			Peso:        p.Producto.Peso,
+			Alto:        p.Producto.Alto,
+			Ancho:       p.Producto.Ancho,
+			Largo:       p.Producto.Largo,
+			Precio:      p.Producto.Precio,
+			PesoTotal:   p.Producto.Peso * float64(p.Cantidad),
+			PrecioTotal: p.Producto.Precio * float64(p.Cantidad),
+		}
+		productosDetallados = append(productosDetallados, detallado)
+	}
 
-    iva := totalPrecio * 0.19 // Calcula el IVA aquí
+	iva := totalPrecio * 0.19 // Calcula el IVA aquí
 
-    resultado := DespachoConTotales{
-        Despacho:          despacho,
-        CantidadItems:     totalItems,
-        TotalKg:           totalKg,
-        TotalPrecio:       totalPrecio,
-        ProductosDespacho: productosDetallados,
-        IVA:               iva, // asigna el IVA calculado
-    }
+	resultado := DespachoConTotales{
+		Despacho:          despacho,
+		CantidadItems:     totalItems,
+		TotalKg:           totalKg,
+		TotalPrecio:       totalPrecio,
+		ProductosDespacho: productosDetallados,
+		IVA:               iva, // asigna el IVA calculado
+		ValorDespacho:     despacho.ValorDespacho,
+	}
 
-    return &resultado, nil
+	return &resultado, nil
 }
-
 
 func UpdateDespacho(db *gorm.DB, id uint, actualizado *modelos.Despacho) error {
 	var existente modelos.Despacho
@@ -210,8 +217,9 @@ func CalcularDespacho(db *gorm.DB, cotID uint, dirClienteID uint) ([]modelos.Des
 	// Se buscan los ítems de la cotización con sus productos y la cotización en sí
 	var items []modelos.CotizacionItem
 	err := db.
-		Preload("Producto").
+		Joins("JOIN productos ON productos.sku = cotizacion_item.producto_id").
 		Preload("Cotizacion").
+		Preload("Sucursal").
 		Where("cotizacion_id = ?", cotID).
 		Find(&items).Error
 	if err != nil {
@@ -234,6 +242,9 @@ func CalcularDespacho(db *gorm.DB, cotID uint, dirClienteID uint) ([]modelos.Des
 
 	// 🧮 Se desglosan los ítems en unidades individuales (uno por cantidad), calculando su volumen
 	for _, item := range items {
+		if item.Producto.SKU == "" {
+			log.Printf("[WARNING] Producto sin SKU en cotizacion_id=%d, sku=%s", item.CotizacionID, item.Producto.SKU)
+		}
 		vol := item.Producto.Largo * item.Producto.Ancho * item.Producto.Alto / 1_000_000
 		for i := 0; i < item.Cantidad; i++ {
 			unidades = append(unidades, Unidad{
@@ -286,11 +297,11 @@ func CalcularDespacho(db *gorm.DB, cotID uint, dirClienteID uint) ([]modelos.Des
 	precioPorKm := 500.0 // Ejemplo: 500 CLP por km
 
 	// Dirección origen y destino (como string)
-	origenStr := fmt.Sprintf("%s, %s", items[0].Sucursal.Direccion, items[0].Sucursal.Ciudad)
-	destinoStr := fmt.Sprintf("%s, %s", destino.Direccion, destino.Ciudad)
+	origenStr := fmt.Sprintf("%s, %s, %s", items[0].Sucursal.Direccion, items[0].Sucursal.Comuna, items[0].Sucursal.Ciudad)
+	destinoStr := fmt.Sprintf("%s, %s, %s", destino.Direccion, destino.Comuna, destino.Ciudad)
 
-	// Obtener distancia
-	distanciaKm, err := obtenerDistanciaEnKm(origenStr, destinoStr)
+	// Obtener distancia y tiempo estimado usando la función auxiliar
+	distanciaKm, _, err := obtenerDistanciaEnKm(origenStr, destinoStr)
 	if err != nil {
 		return nil, fmt.Errorf("error al obtener distancia: %v", err)
 	}
@@ -446,6 +457,17 @@ func GetDespachoDistanciaByID(db *gorm.DB, id uint) (*modelos.DespachoDistanciaR
 		totalKg += float64(producto.Cantidad) * producto.Producto.Peso
 	}
 
+	origen := fmt.Sprintf("%s, %s, %s", despacho.OrigenSucursal.Direccion, despacho.OrigenSucursal.Comuna, despacho.OrigenSucursal.Ciudad)
+	destino := fmt.Sprintf("%s, %s, %s", despacho.DestinoDirCliente.Direccion, despacho.DestinoDirCliente.Comuna, despacho.DestinoDirCliente.Ciudad)
+
+	distKm, tiempoMin, err := obtenerDistanciaEnKm(origen, destino)
+	if err != nil {
+		return nil, err
+	}
+
+	distStr := fmt.Sprintf("%.1f", distKm)      // Formatear a un decimal
+	tiempoStr := fmt.Sprintf("%.0f", tiempoMin) // Formatear a un decimal
+
 	// Construir la respuesta
 	response := &modelos.DespachoDistanciaResponse{
 		ID:                 despacho.ID,
@@ -457,8 +479,8 @@ func GetDespachoDistanciaByID(db *gorm.DB, id uint) (*modelos.DespachoDistanciaR
 		ValorDespacho:      despacho.ValorDespacho,
 		CantidadItems:      cantidadItems,
 		TotalKg:            totalKg,
-		DistanciaCalculada: despacho.DistanciaCalculada,
-		TiempoEstimado:     despacho.TiempoEstimado,
+		DistanciaCalculada: &distStr,
+		TiempoEstimado:     &tiempoStr,
 	}
 
 	// Agregar información de cotización si existe
@@ -531,6 +553,16 @@ func GetDespachosDistancia(db *gorm.DB) ([]modelos.DespachoDistanciaResponse, er
 			cantidadItems += producto.Cantidad
 			totalKg += float64(producto.Cantidad) * producto.Producto.Peso
 		}
+		origen := fmt.Sprintf("%s, %s, %s", despacho.OrigenSucursal.Direccion, despacho.OrigenSucursal.Comuna, despacho.OrigenSucursal.Ciudad)
+		destino := fmt.Sprintf("%s, %s, %s", despacho.DestinoDirCliente.Direccion, despacho.DestinoDirCliente.Comuna, despacho.DestinoDirCliente.Ciudad)
+
+		distancia, tiempo, err := obtenerDistanciaEnKm(origen, destino)
+		if err != nil {
+			return nil, err
+		}
+
+		distanciaStr := fmt.Sprintf("%.1f", distancia) // Formatear a un decimal
+		tiempoStr := fmt.Sprintf("%.0f", tiempo)       // Formatear a un
 
 		// Construir respuesta individual
 		despachoResponse := modelos.DespachoDistanciaResponse{
@@ -543,8 +575,8 @@ func GetDespachosDistancia(db *gorm.DB) ([]modelos.DespachoDistanciaResponse, er
 			ValorDespacho:      despacho.ValorDespacho,
 			CantidadItems:      cantidadItems,
 			TotalKg:            totalKg,
-			DistanciaCalculada: despacho.DistanciaCalculada,
-			TiempoEstimado:     despacho.TiempoEstimado,
+			DistanciaCalculada: &distanciaStr,
+			TiempoEstimado:     &tiempoStr,
 		}
 
 		// Agregar información de cotización si existe
@@ -614,34 +646,33 @@ func ActualizarDistanciaDespacho(db *gorm.DB, id uint, distancia, tiempo string)
 }
 
 func GetFacturaElectronicaByDespachoID(db *gorm.DB, despachoID uint) (map[string]interface{}, error) {
-    ficha, err := GetDespachoByID(db, despachoID)
-    if err != nil {
-        return nil, err
-    }
+	ficha, err := GetDespachoByID(db, despachoID)
+	if err != nil {
+		return nil, err
+	}
 
-    // Ya no es necesario recalcular el IVA, lo tomamos directamente
-    factura := map[string]interface{}{
-        "folio":       ficha.ID,
-        "fecha":       ficha.FechaDespacho,
-        "cliente":     ficha.Cotizacion.Cliente.Nombre,
-        "rut_cliente": ficha.Cotizacion.Cliente.Rut,
-        "total":       ficha.TotalPrecio,
-        "iva":         ficha.IVA,
-        "estado":      ficha.Cotizacion.Estado,
-        "tipo":        "Factura Electrónica",
-    }
-    return factura, nil
+	// Ya no es necesario recalcular el IVA, lo tomamos directamente
+	factura := map[string]interface{}{
+		"folio":       ficha.ID,
+		"fecha":       ficha.FechaDespacho,
+		"cliente":     ficha.Cotizacion.Cliente.Nombre,
+		"rut_cliente": ficha.Cotizacion.Cliente.Rut,
+		"total":       ficha.TotalPrecio,
+		"iva":         ficha.IVA,
+		"estado":      ficha.Cotizacion.Estado,
+		"tipo":        "Factura Electrónica",
+	}
+	return factura, nil
 }
 
-
-func obtenerDistanciaEnKm(origen, destino string) (float64, error) {
+func obtenerDistanciaEnKm(origen, destino string) (float64, float64, error) {
 	apiKey := os.Getenv("GOOGLE_MAPS_API_KEY")
 	urlGoogle := fmt.Sprintf("https://maps.googleapis.com/maps/api/directions/json?origin=%s&destination=%s&key=%s",
 		url.QueryEscape(origen), url.QueryEscape(destino), apiKey)
 
 	resp, err := http.Get(urlGoogle)
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 	defer resp.Body.Close()
 
@@ -649,13 +680,17 @@ func obtenerDistanciaEnKm(origen, destino string) (float64, error) {
 	var data map[string]interface{}
 	json.Unmarshal(body, &data)
 
+	//fmt.Printf("[DEBUG GOOGLE] URL: %s\n", urlGoogle)
+	//fmt.Printf("[DEBUG GOOGLE] Response: %s\n", string(body))
+
 	routes := data["routes"].([]interface{})
 	if len(routes) == 0 {
-		return 0, fmt.Errorf("no se encontraron rutas")
+		return 0, 0, fmt.Errorf("no se encontraron rutas")
 	}
 
 	legs := routes[0].(map[string]interface{})["legs"].([]interface{})
 	distancia := legs[0].(map[string]interface{})["distance"].(map[string]interface{})["value"].(float64) // metros
+	tiempo := legs[0].(map[string]interface{})["duration"].(map[string]interface{})["value"].(float64)    // segundos
 
-	return distancia / 1000, nil // convertimos a km
+	return distancia / 1000, tiempo / 60, nil // convertimos a km y minutos
 }
