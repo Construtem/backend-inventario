@@ -164,7 +164,7 @@ func (Cotizacion) TableName() string {
 
 type CotizacionItem struct {
 	CotizacionID uint   `gorm:"primaryKey;column:cotizacion_id" json:"cotizacion_id"`
-	ProductoID   string `gorm:"primaryKey;size:20;column:producto_id" json:"producto_id"`
+	ProductoID   string `gorm:"primaryKey;size:20;column:sku" json:"producto_id"`
 	SucursalID   uint   `gorm:"primaryKey;column:sucursal_id" json:"sucursal_id"`
 	Cantidad     int    `gorm:"not null" json:"cantidad"`
 

@@ -21,12 +21,12 @@ import (
 // DespachoConTotales es una estructura que incluye un despacho y sus totales calculados
 type DespachoConTotales struct {
 	modelos.Despacho
-	CantidadItems     int                         `json:"cantidad_items"`
-	TotalKg           float64                     `json:"total_kg"`
-	TotalPrecio       float64                     `json:"total_precio"`
-	ProductosDespacho []ProductoDespachoDetallado `json:"items"`
-	IVA               float64                     `json:"iva"`
-	ValorDespacho     float64                     `json:"valor_despacho"`
+	CantidadItems int                         `json:"cantidad_items"`
+	TotalKg       float64                     `json:"total_kg"`
+	TotalPrecio   float64                     `json:"total_precio"`
+	IVA           float64                     `json:"iva"`
+	ValorDespacho float64                     `json:"valor_despacho"`
+	Items         []ProductoDespachoDetallado `json:"items"`
 
 	DistanciaKM    float64 `json:"distancia_km"`
 	TiempoEstimado float64 `json:"tiempo_estimado"` // en minutos
@@ -126,13 +126,13 @@ func GetDespachos(db *gorm.DB) ([]DespachoConTotales, error) {
 		}
 
 		resultado = append(resultado, DespachoConTotales{
-			Despacho:          despacho,
-			CantidadItems:     totalItems,
-			TotalKg:           totalKg,
-			TotalPrecio:       totalPrecio,
-			IVA:               totalPrecio * 0.19, // Calcula el IVA aquí
-			ProductosDespacho: productosDetallados,
-			ValorDespacho:     despacho.ValorDespacho,
+			Despacho:      despacho,
+			CantidadItems: totalItems,
+			TotalKg:       totalKg,
+			TotalPrecio:   totalPrecio,
+			IVA:           totalPrecio * 0.19, // Calcula el IVA aquí
+			Items:         productosDetallados,
+			ValorDespacho: despacho.ValorDespacho,
 		})
 	}
 	return resultado, nil
@@ -183,13 +183,13 @@ func GetDespachoByID(db *gorm.DB, id uint) (*DespachoConTotales, error) {
 	iva := totalPrecio * 0.19 // Calcula el IVA aquí
 
 	resultado := DespachoConTotales{
-		Despacho:          despacho,
-		CantidadItems:     totalItems,
-		TotalKg:           totalKg,
-		TotalPrecio:       totalPrecio,
-		ProductosDespacho: productosDetallados,
-		IVA:               iva, // asigna el IVA calculado
-		ValorDespacho:     despacho.ValorDespacho,
+		Despacho:      despacho,
+		CantidadItems: totalItems,
+		TotalKg:       totalKg,
+		TotalPrecio:   totalPrecio,
+		Items:         productosDetallados,
+		IVA:           iva, // asigna el IVA calculado
+		ValorDespacho: despacho.ValorDespacho,
 	}
 
 	return &resultado, nil
@@ -217,7 +217,7 @@ func CalcularDespacho(db *gorm.DB, cotID uint, dirClienteID uint) ([]modelos.Des
 	// Se buscan los ítems de la cotización con sus productos y la cotización en sí
 	var items []modelos.CotizacionItem
 	err := db.
-		Joins("JOIN productos ON productos.sku = cotizacion_item.producto_id").
+		Preload("Producto").
 		Preload("Cotizacion").
 		Preload("Sucursal").
 		Where("cotizacion_id = ?", cotID).
@@ -362,8 +362,21 @@ func CalcularDespacho(db *gorm.DB, cotID uint, dirClienteID uint) ([]modelos.Des
 			}
 		}
 
+		var nuevoDespacho modelos.Despacho
+		err = db.
+			Preload("Cotizacion.Cliente").
+			Preload("Cotizacion.Usuario").
+			Preload("Camion.Tipo").
+			Preload("OrigenSucursal.Tipo").
+			Preload("DestinoDirCliente.Cliente.Tipo").
+			Preload("ProductosDespacho.Producto").
+			First(&nuevoDespacho, despacho.ID).Error
+		if err != nil {
+			return nil, err
+		}
+
 		// 🧾 Se guarda el despacho generado
-		despachos = append(despachos, despacho)
+		despachos = append(despachos, nuevoDespacho)
 	}
 
 	return despachos, nil
