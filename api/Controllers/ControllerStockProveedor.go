@@ -33,10 +33,23 @@ func GetStockProveedorByID(db *gorm.DB, proveedorID uint, productoID string) (*m
 }
 
 func CreateStockProveedor(db *gorm.DB, stock *modelos.StockProveedor) error {
-	if stock.FechaIngreso.IsZero() {
-		stock.FechaIngreso = time.Now()
-	}
-	return db.Create(stock).Error
+    // Genera el SKU automáticamente
+    sku := GenerarSKU(stock.Producto.Nombre, stock.Proveedor.Marca)
+    stock.Producto.SKU = sku
+
+    // Verifica si el SKU ya existe
+    var existente modelos.Producto
+    if err := db.Where("sku = ?", sku).First(&existente).Error; err == nil {
+        return errors.New("SKU ya existe")
+    }
+
+    // Asigna la fecha de ingreso si no viene
+    if stock.FechaIngreso.IsZero() {
+        stock.FechaIngreso = time.Now()
+    }
+
+    // Guarda el producto y el stock
+    return db.Create(stock).Error
 }
 
 func UpdateStockProveedor(db *gorm.DB, proveedorID uint, sku string, actualizado modelos.StockProveedor) error {
