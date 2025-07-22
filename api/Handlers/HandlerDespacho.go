@@ -213,8 +213,7 @@ func AprobarDespachoHandler(db *gorm.DB) gin.HandlerFunc {
 func CambiarEstadoDespachosHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req struct {
-			CotizacionID uint   `json:"cotizacion_id"`
-			Estado       string `json:"estado"`
+			CotizacionID uint `json:"cotizacion_id"`
 		}
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -224,13 +223,15 @@ func CambiarEstadoDespachosHandler(db *gorm.DB) gin.HandlerFunc {
 			})
 			return
 		}
-		err := Controllers.CambiarEstadoDespachosPorCotizacion(db, req.CotizacionID, req.Estado)
+
+		err := Controllers.CambiarEstadoDespachosPorCotizacion(db, req.CotizacionID)
 		if err != nil {
 			switch err.Error() {
-			case "Estado no permitido":
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Estado no permitido", "mensaje": "El estado enviado no es válido."})
-			case "No se encontraron despachos para la cotización":
-				c.JSON(http.StatusNotFound, gin.H{"error": "No encontrado", "mensaje": "No hay despachos registrados para la cotización indicada."})
+			case "no se encontraron despachos para la cotización especificada":
+				c.JSON(http.StatusNotFound, gin.H{
+					"error":   "No encontrado",
+					"mensaje": "No hay despachos registrados para la cotización indicada.",
+				})
 			default:
 				c.JSON(http.StatusInternalServerError, gin.H{
 					"error":    "Error interno",
@@ -240,7 +241,10 @@ func CambiarEstadoDespachosHandler(db *gorm.DB) gin.HandlerFunc {
 			}
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"message": "Estado de despachos actualizado exitosamente"})
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Estado de despachos actualizado exitosamente",
+		})
 	}
 }
 

@@ -414,21 +414,44 @@ func AprobarDespacho(db *gorm.DB, cotID uint) error {
 
 // Funciones auxiliares
 // Cambia el estado de los despachos asociados a una cotización
-func CambiarEstadoDespachosPorCotizacion(db *gorm.DB, cotizacionID uint, estado string) error {
-	if estado != "pendiente" && estado != "entregado" && estado != "aprobado" {
-		return errors.New("estado no permitido")
+func CambiarEstadoDespachosPorCotizacion(db *gorm.DB, cotID uint) error {
+	tx := db.Begin()
+	if tx.Error != nil {
+		return tx.Error
 	}
-	result := db.Model(&modelos.Despacho{}).
-		Where("cotizacion_id = ?", cotizacionID).
-		Update("estado", estado)
+
+	result := tx.Model(&modelos.Despacho{}).
+		Where("cotizacion_id = ?", cotID).
+		Update("estado", "aprobado")
+
 	if result.Error != nil {
+		tx.Rollback()
 		return result.Error
 	}
+
 	if result.RowsAffected == 0 {
-		return errors.New("no se encontraron despachos para la cotización")
+		tx.Rollback()
+		return errors.New("no se encontraron despachos para la cotización especificada")
 	}
-	return nil
+
+	var items []modelos.CotizacionItem
+	if err := tx.Where("cotizacion_id = ?", cotID).Find(&items).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	for _, item := range items {
+		if err := tx.Model(&modelos.StockSucursal{}).
+			Where("sku = ? AND sucursal_id = ?", item.ProductoID, item.SucursalID).
+			Update("cantidad", gorm.Expr("cantidad - ?", item.Cantidad)).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit().Error
 }
+
 func pesoTotal(grupo []Unidad) float64 {
 	var total float64
 	for _, u := range grupo {
