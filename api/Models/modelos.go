@@ -133,6 +133,7 @@ type Cliente struct {
 type DirCliente struct {
 	ID         uint   `gorm:"primaryKey" json:"id"`
 	RutCliente string `gorm:"column:rut_cliente;not null" json:"rut_cliente"`
+	Nombre     string `gorm:"size:100;not null" json:"nombre"`
 	Direccion  string `gorm:"size:200;not null" json:"direccion"`
 	Comuna     string `gorm:"size:100;not null" json:"comuna"`
 	Ciudad     string `gorm:"size:100;not null" json:"ciudad"`
@@ -295,13 +296,4 @@ type DistanciaResponse struct {
 	Distancia      string `json:"distancia"`
 	Duracion       string `json:"duracion"`
 	RutaOptimizada bool   `json:"ruta_optimizada"`
-}
-
-// DespachoSimpleRequest es la estructura para crear un despacho simple
-type DespachoSimpleRequest struct {
-	CotizacionID      int    `json:"cotizacion_id"`
-	RutReceptor       string `json:"rut_receptor"`
-	DireccionReceptor string `json:"direccion_receptor"`
-	ComunaReceptor    string `json:"comuna_receptor"`
-	CiudadReceptor    string `json:"ciudad_receptor"`
 }
