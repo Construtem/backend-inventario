@@ -566,18 +566,25 @@ func GetDespachosDistancia(db *gorm.DB) ([]modelos.DespachoDistanciaResponse, er
 			cantidadItems += producto.Cantidad
 			totalKg += float64(producto.Cantidad) * producto.Producto.Peso
 		}
+
 		origen := fmt.Sprintf("%s, %s, %s", despacho.OrigenSucursal.Direccion, despacho.OrigenSucursal.Comuna, despacho.OrigenSucursal.Ciudad)
 		destino := fmt.Sprintf("%s, %s, %s", despacho.DestinoDirCliente.Direccion, despacho.DestinoDirCliente.Comuna, despacho.DestinoDirCliente.Ciudad)
 
 		distancia, tiempo, err := obtenerDistanciaEnKm(origen, destino)
 		if err != nil {
-			return nil, err
+			fmt.Printf("Error al obtener distancia para despacho %d: %v\n", despacho.ID, err)
+			distancia = 0
+			tiempo = 0
+		} else {
+			err = ActualizarDistanciaDespacho(db, despacho.ID, fmt.Sprintf("%.1f", distancia), fmt.Sprintf("%.0f", tiempo))
+			if err != nil {
+				fmt.Printf("Error al actualizar distancia en BD para despacho %d: %v\n", despacho.ID, err)
+			}
 		}
 
-		distanciaStr := fmt.Sprintf("%.1f", distancia) // Formatear a un decimal
-		tiempoStr := fmt.Sprintf("%.0f", tiempo)       // Formatear a un
+		distanciaStr := fmt.Sprintf("%.1f", distancia)
+		tiempoStr := fmt.Sprintf("%.0f", tiempo)
 
-		// Construir respuesta individual
 		despachoResponse := modelos.DespachoDistanciaResponse{
 			ID:                 despacho.ID,
 			CotizacionID:       despacho.CotizacionID,
@@ -706,4 +713,84 @@ func obtenerDistanciaEnKm(origen, destino string) (float64, float64, error) {
 	tiempo := legs[0].(map[string]interface{})["duration"].(map[string]interface{})["value"].(float64)    // segundos
 
 	return distancia / 1000, tiempo / 60, nil // convertimos a km y minutos
+}
+
+func GuardarActualizarDespacho(db *gorm.DB, req modelos.DespachoSimpleRequest) (*modelos.Despacho, error) {
+	// Buscar cliente por rut
+	var cliente modelos.Cliente
+	if err := db.Where("rut = ?", req.RutReceptor).First(&cliente).Error; err != nil {
+		fmt.Printf("Cliente no encontrado: %v\n", err)
+		return nil, fmt.Errorf("cliente no encontrado")
+	}
+
+	// Verificar o crear dirección en dir_cliente
+	var dir modelos.DirCliente
+	if err := db.Where("rut_cliente = ? AND direccion = ? AND comuna = ? AND ciudad = ?",
+		req.RutReceptor, req.DireccionReceptor, req.ComunaReceptor, req.CiudadReceptor).
+		First(&dir).Error; err != nil {
+		// Crear si no existe
+		dir = modelos.DirCliente{
+			RutCliente: req.RutReceptor,
+			Direccion:  req.DireccionReceptor,
+			Comuna:     req.ComunaReceptor,
+			Ciudad:     req.CiudadReceptor,
+		}
+		if err := db.Create(&dir).Error; err != nil {
+			fmt.Printf("Error al guardar dirección: %v\n", err)
+			return nil, fmt.Errorf("no se pudo guardar la dirección")
+		}
+	}
+
+	// Obtener items de cotización
+	var items []modelos.CotizacionItem
+	if err := db.Where("cotizacion_id = ?", req.CotizacionID).Find(&items).Error; err != nil {
+		return nil, fmt.Errorf("no se pudieron obtener los ítems de la cotización: %v", err)
+	}
+	if len(items) == 0 {
+		return nil, fmt.Errorf("la cotización no tiene ítems asociados")
+	}
+
+	// Usar el SucursalID del primer ítem como origen del despacho
+	origenSucursalID := items[0].SucursalID
+
+	// Obtener camión disponible (ejemplo: el primero activo)
+	var camion modelos.Camion
+	if err := db.Where("activo = true").First(&camion).Error; err != nil {
+		return nil, fmt.Errorf("no se encontró un camión disponible: %v", err)
+	}
+
+	// Calcular valor de despacho (puedes adaptar según tu lógica)
+	valorDespacho := 5000.0 // valor fijo o calculado
+
+	nuevoDespacho := modelos.Despacho{
+		CotizacionID:  uint(req.CotizacionID),
+		CamionID:      camion.ID,
+		Origen:        origenSucursalID,
+		Destino:       dir.ID,
+		FechaDespacho: time.Now(),
+		ValorDespacho: valorDespacho,
+		Estado:        "pendiente",
+	}
+
+	if err := db.Create(&nuevoDespacho).Error; err != nil {
+		fmt.Printf("Error al guardar despacho: %v\n", err)
+		return nil, fmt.Errorf("no se pudo guardar el despacho")
+	}
+
+	// Cargar despacho completo con asociaciones para devolver
+	var despachoCompleto modelos.Despacho
+	if err := db.Preload("Cotizacion").
+		Preload("Cotizacion.Cliente").
+		Preload("Cotizacion.Usuario").
+		Preload("Camion").
+		Preload("OrigenSucursal").
+		Preload("DestinoDirCliente").
+		Preload("ProductosDespacho").
+		Preload("ProductosDespacho.Producto").
+		First(&despachoCompleto, nuevoDespacho.ID).Error; err != nil {
+		fmt.Printf("Error al cargar despacho completo: %v\n", err)
+		return nil, fmt.Errorf("no se pudo cargar el despacho completo")
+	}
+
+	return &despachoCompleto, nil
 }

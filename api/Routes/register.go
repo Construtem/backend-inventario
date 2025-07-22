@@ -60,6 +60,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB) {
 	api.POST("/despachos/cambiar-estado", Handlers.CambiarEstadoDespachosHandler(db))
 	api.GET("/despachos/:id/pdf", Controllers.GenerarDespachoPDF(db))
 	api.GET("/despachos/:id/ficha", Handlers.GetFichaDespachoHandler(db))
+	api.POST("despachos/:id/ficha", Handlers.RecibirFichaDespachoHandler(db))
 
 	// Rutas específicas para el sistema de rutas y distancias
 	api.GET("/despachos-distancia", Handlers.GetDespachosDistanciaHandler(db))
