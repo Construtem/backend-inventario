@@ -46,8 +46,8 @@ type StockProveedor struct {
 	Stock        int       `gorm:"not null" json:"stock"`
 	FechaIngreso time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"fecha_ingreso"`
 
-	Proveedor Proveedor `gorm:"foreignKey:ProveedorID;references:ID;constraint:OnDelete:CASCADE" json:"proveedor"`
-	Producto  Producto  `gorm:"foreignKey:ProductoID;references:SKU;constraint:OnDelete:CASCADE" json:"producto"`
+	Proveedor Proveedor `gorm:"foreignKey:ProveedorID;references:ID;constraint:OnDelete:CASCADE" json:"proveedor,omitempty"`
+	Producto  Producto  `gorm:"foreignKey:ProductoID;references:SKU;constraint:OnDelete:CASCADE" json:"producto,omitempty"`
 }
 
 func (StockProveedor) TableName() string {

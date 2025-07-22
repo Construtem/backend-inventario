@@ -127,6 +127,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB) {
 	api.GET("/stock-proveedor", Handlers.GetStockProveedorHandler(db))
 	api.GET("/stock-proveedor/:proveedor_id/:sku", Handlers.GetStockProveedorByIDHandler(db))
 	api.POST("/stock-proveedor", Handlers.CreateStockProveedorHandler(db))
+	api.POST("/stock-proveedor/completo", Handlers.CreateStockProveedorCompletoHandler(db))
 	api.PUT("/stock-proveedor/:proveedor_id/:sku", Handlers.UpdateStockProveedorHandler(db))
 	api.DELETE("/stock-proveedor/:proveedor_id/:sku", Handlers.DeleteStockProveedorHandler(db))
 

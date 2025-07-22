@@ -25,7 +25,7 @@ func GetStockProveedorByID(db *gorm.DB, proveedorID uint, productoID string) (*m
 	if err := db.
 		Preload("Proveedor").
 		Preload("Producto").
-		First(&stock, "proveedor_id = ? AND producto_id = ?", proveedorID, productoID).
+		First(&stock, "proveedor_id = ? AND sku = ?", proveedorID, productoID).
 		Error; err != nil {
 		return nil, err
 	}
@@ -33,9 +33,28 @@ func GetStockProveedorByID(db *gorm.DB, proveedorID uint, productoID string) (*m
 }
 
 func CreateStockProveedor(db *gorm.DB, stock *modelos.StockProveedor) error {
+	// Verificar que el proveedor existe
+	var proveedor modelos.Proveedor
+	if err := db.First(&proveedor, stock.ProveedorID).Error; err != nil {
+		return errors.New("proveedor no encontrado")
+	}
+
+	// Verificar que el producto existe
+	var producto modelos.Producto
+	if err := db.First(&producto, "sku = ?", stock.ProductoID).Error; err != nil {
+		return errors.New("producto no encontrado")
+	}
+
+	// Verificar si ya existe el registro de stock
+	var existingStock modelos.StockProveedor
+	if err := db.First(&existingStock, "proveedor_id = ? AND sku = ?", stock.ProveedorID, stock.ProductoID).Error; err == nil {
+		return errors.New("ya existe stock para este producto y proveedor")
+	}
+
 	if stock.FechaIngreso.IsZero() {
 		stock.FechaIngreso = time.Now()
 	}
+	
 	return db.Create(stock).Error
 }
 
